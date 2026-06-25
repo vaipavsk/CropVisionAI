@@ -1,0 +1,20 @@
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# Lockfiles and logs
+package-lock.json
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
