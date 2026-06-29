@@ -1,0 +1,19 @@
+﻿# Frontend app
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Root Node artifacts (in case they appear again)
+node_modules/
+package-lock.json
+package.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
