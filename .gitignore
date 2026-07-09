@@ -1,19 +1,66 @@
-﻿# Frontend app
+﻿# ===========================
+# Frontend (React + Vite)
+# ===========================
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# Root Node artifacts (in case they appear again)
+# Root Node artifacts
 node_modules/
 package-lock.json
-package.json
 
+# ===========================
 # Python
-__pycache__/
-*.pyc
+# ===========================
+venv/
 .venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
-# Editor / OS
+# ===========================
+# Environment Variables
+# ===========================
+.env
+*.env
+
+# ===========================
+# Uploads & Generated Files
+# ===========================
+uploads/
+reports/
+
+ai-service/app/uploads/
+ai-service/app/reports/
+
+backend/app/uploads/
+
+# ===========================
+# Logs
+# ===========================
+*.log
+
+# ===========================
+# IDE
+# ===========================
 .vscode/
+.idea/
+
+# ===========================
+# Operating System
+# ===========================
 .DS_Store
 Thumbs.db
+
+# ===========================
+# Python Testing
+# ===========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===========================
+# Build / Cache
+# ===========================
+.cache/
