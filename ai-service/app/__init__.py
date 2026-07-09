@@ -1,0 +1,1 @@
+"""CropVisionAI application package."""
