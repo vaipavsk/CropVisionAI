@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class UploadStatus(str, Enum):
     """Supported file upload states."""
 
+    PENDING_ANALYSIS = "PENDING_ANALYSIS"
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -33,9 +34,9 @@ class Upload(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -43,7 +44,7 @@ class Upload(Base):
     original_name: Mapped[str] = mapped_column(String(255), nullable=False)
     mime_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     file_size_bytes: Mapped[int | None] = mapped_column(nullable=True)
-    status: Mapped[UploadStatus] = mapped_column(default=UploadStatus.PENDING, nullable=False, index=True)
+    status: Mapped[UploadStatus] = mapped_column(default=UploadStatus.PENDING_ANALYSIS, nullable=False, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -59,7 +60,7 @@ class Upload(Base):
         index=True,
     )
 
-    user: Mapped["User"] = relationship(back_populates="uploads")
+    user: Mapped["User | None"] = relationship(back_populates="uploads")
     prediction: Mapped["Prediction | None"] = relationship(
         back_populates="upload",
         uselist=False,

@@ -24,6 +24,15 @@ SessionLocal = sessionmaker(
 )
 
 
+def initialize_database() -> None:
+    """Create tables in the configured MySQL database."""
+    import app.models  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+
+
+initialize_database()
+
+
 def get_db() -> Generator[Session, None, None]:
     """Yield a database session for dependency injection."""
     db = SessionLocal()
@@ -33,4 +42,4 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-__all__ = ["Base", "engine", "SessionLocal", "get_db"]
+__all__ = ["Base", "engine", "SessionLocal", "get_db", "initialize_database"]
