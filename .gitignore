@@ -1,23 +1,37 @@
-﻿# ===========================
-# Frontend (React + Vite)
-# ===========================
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-
-# Root Node artifacts
-node_modules/
-package-lock.json
+﻿# =====================================
+# CropVisionAI - .gitignore
+# =====================================
 
 # ===========================
-# Python
+# Python Virtual Environments
 # ===========================
 venv/
+venv312/
 .venv/
+env/
+
+# ===========================
+# Python Cache
+# ===========================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
+
+# ===========================
+# Pytest
+# ===========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===========================
+# Python Build
+# ===========================
+build/
+dist/
+*.egg-info/
 
 # ===========================
 # Environment Variables
@@ -26,7 +40,7 @@ __pycache__/
 *.env
 
 # ===========================
-# Uploads & Generated Files
+# Uploads & Generated Reports
 # ===========================
 uploads/
 reports/
@@ -34,7 +48,14 @@ reports/
 ai-service/app/uploads/
 ai-service/app/reports/
 
-backend/app/uploads/
+# ===========================
+# React / Node
+# ===========================
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+node_modules/
 
 # ===========================
 # Logs
@@ -48,19 +69,33 @@ backend/app/uploads/
 .idea/
 
 # ===========================
-# Operating System
+# OS Files
 # ===========================
 .DS_Store
 Thumbs.db
 
 # ===========================
-# Python Testing
+# Git
 # ===========================
-.pytest_cache/
-.coverage
-htmlcov/
+.git/
+.gitignore
 
 # ===========================
-# Build / Cache
+# Temporary Files
 # ===========================
 .cache/
+*.tmp
+*.bak
+
+# ===========================
+# Model Checkpoints (Optional)
+# Keep if you don't want to upload models
+# ===========================
+# trained_models/
+# *.pt
+# *.pth
+
+# ===========================
+# Jupyter
+# ===========================
+.ipynb_checkpoints/
