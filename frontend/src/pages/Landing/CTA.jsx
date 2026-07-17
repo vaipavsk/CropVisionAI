@@ -1,48 +1,49 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
-function CTA() {
+export function CTA() {
   return (
-    <section id="get-started" className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+    <section id="get-started" className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.5 }}
-        className="rounded-[32px] border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(15,23,42,0.95))] p-8 shadow-[0_25px_100px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-10 lg:p-12"
+        transition={{ duration: 0.6 }}
+        className="relative overflow-hidden rounded-[32px] border border-emerald-400/20 bg-slate-900/60 p-8 shadow-2xl backdrop-blur-xl sm:p-10 lg:p-12"
       >
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
-              <Sparkles size={16} />
-              Ready to Deploy
+        {/* Glow rings in CTA background */}
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
+          <div className="max-w-2xl text-left">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              <Sparkles size={14} className="animate-pulse" />
+              Research Sandbox
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Start using CropVisionAI to streamline crop damage assessment and claim verification.
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl leading-tight">
+              Ready to explore crop diagnostics?
             </h2>
-            <p className="mt-4 text-lg leading-8 text-slate-300">
-              Bring explainable AI into your insurance workflow today and help farmers and insurers make faster, better decisions.
+            <p className="mt-4 text-base text-slate-300 leading-relaxed">
+              Launch our Mission Control hub to analyze crop disease symptoms, review prediction reports, and audit explainable Grad-CAM heatmaps.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <motion.a
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              href="#home"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition"
+          <div className="flex flex-wrap gap-4">
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-md shadow-emerald-500/15 hover:scale-[1.02] transition"
             >
-              Get Started
+              Enter Mission Control
               <ArrowRight size={16} />
-            </motion.a>
-            <motion.a
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+            </Link>
+            <a
               href="#features"
-              className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              className="rounded-xl border border-white/10 bg-slate-800/40 px-6 py-3.5 text-sm font-semibold text-slate-200 hover:border-emerald-400/40 hover:text-emerald-300 transition"
             >
-              Explore Features
-            </motion.a>
+              View Technologies
+            </a>
           </div>
         </div>
       </motion.div>

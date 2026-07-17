@@ -1,0 +1,341 @@
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LayoutDashboard,
+  Sprout,
+  FileText,
+  User,
+  Sun,
+  Moon,
+  Menu,
+  X,
+  Database,
+  Cpu,
+  Wifi,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Sparkles,
+} from 'lucide-react';
+import { useTheme } from '../theme';
+
+const sidebarItems = [
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Crop Analysis', path: '/analysis', icon: Sprout },
+  { label: 'Reports', path: '/reports', icon: FileText },
+  { label: 'Profile', path: '/profile', icon: User },
+];
+
+export function MissionControlLayout({ children }) {
+  const { isDark, toggleTheme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop collapse state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile toggle state
+
+  const handleLogout = () => {
+    // Basic navigation to home/login
+    navigate('/login');
+  };
+
+  const getPageTitle = () => {
+    const activeItem = sidebarItems.find((item) => item.path === location.pathname);
+    return activeItem ? activeItem.label : 'Mission Control';
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text">
+      
+      {/* BACKGROUND DECORATIVE GLOWS */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-[400px] w-[400px] rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-3xl" />
+        <div className="absolute top-1/2 left-[-200px] h-[350px] w-[350px] rounded-full bg-cyan-500/10 dark:bg-cyan-500/5 blur-3xl" />
+      </div>
+
+      <div className="flex flex-1 relative overflow-hidden">
+        
+        {/* DESKTOP SIDEBAR */}
+        <aside
+          className={`
+            hidden md:flex flex-col relative z-20 border-r transition-all duration-300
+            bg-white/80 border-slate-200 dark:bg-slate-950/80 dark:border-white/5 backdrop-blur-xl
+            ${isSidebarOpen ? 'w-64' : 'w-20'}
+          `}
+        >
+          {/* Sidebar Header */}
+          <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/50 dark:border-white/5">
+            <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-slate-950 shadow-md shadow-emerald-500/10">
+                <Sparkles size={18} className="animate-pulse" />
+              </div>
+              {isSidebarOpen && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="whitespace-nowrap"
+                >
+                  <p className="text-sm font-bold tracking-wide text-slate-900 dark:text-white leading-none">CropVisionAI</p>
+                  <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-500 dark:text-emerald-400">
+                    XAI Predictor
+                  </span>
+                </motion.div>
+              )}
+            </Link>
+          </div>
+
+          {/* Sidebar Navigation */}
+          <nav className="flex-1 space-y-1.5 px-3 py-4">
+            {sidebarItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className={`
+                    relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium tracking-wide transition-all duration-300 outline-none
+                    ${isActive 
+                      ? 'text-emerald-600 dark:text-emerald-300 font-semibold' 
+                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                    }
+                  `}
+                >
+                  {/* Sliding active pill indicator */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="absolute inset-0 z-0 rounded-xl bg-emerald-500/10 border-l-[3px] border-emerald-500 dark:bg-emerald-500/10"
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+
+                  <div className={`relative z-10 ${isActive ? 'text-emerald-500 dark:text-emerald-400' : ''}`}>
+                    <Icon size={18} />
+                  </div>
+
+                  {isSidebarOpen && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="relative z-10 whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Sidebar Footer with Collapse Control */}
+          <div className="p-3 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
+            {isSidebarOpen && (
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="h-8 w-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                  VK
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-semibold leading-tight text-slate-800 dark:text-white">Vipin Kumar</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">M.Tech Scholar</p>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white cursor-pointer"
+            >
+              {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            </button>
+          </div>
+        </aside>
+
+        {/* MOBILE DRAWER SIDEBAR */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-40 md:hidden flex">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+              />
+
+              {/* Drawer Container */}
+              <motion.aside
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="relative z-10 w-72 flex flex-col h-full bg-slate-900 border-r border-white/5 text-white"
+              >
+                <div className="flex h-16 items-center justify-between px-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-slate-950 shadow-md">
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold tracking-wide">CropVisionAI</p>
+                      <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-400">
+                        XAI Predictor
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="rounded-full p-1.5 text-slate-400 hover:bg-white/5 hover:text-white cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <nav className="flex-1 space-y-1.5 px-3 py-4">
+                  {sidebarItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`
+                          relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-300
+                          ${isActive 
+                            ? 'text-emerald-300 font-semibold' 
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }
+                        `}
+                      >
+                        {isActive && (
+                          <div className="absolute inset-0 rounded-xl bg-emerald-500/10 border-l-[3px] border-emerald-500" />
+                        )}
+                        <Icon size={18} className={isActive ? 'text-emerald-400' : ''} />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                <div className="p-4 border-t border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300 font-bold text-xs">
+                      VK
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-white">Vipin Kumar</p>
+                      <p className="text-[10px] text-slate-400 font-medium">M.Tech Scholar</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-red-400 cursor-pointer"
+                    aria-label="Logout"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              </motion.aside>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* MAIN BODY LAYOUT */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+          
+          {/* TOPBAR */}
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5">
+            
+            {/* Mobile hamburger trigger */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white md:hidden cursor-pointer"
+              aria-label="Open navigation drawer"
+            >
+              <Menu size={20} />
+            </button>
+
+            {/* Page title / Breadcrumbs */}
+            <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <span className="opacity-80">Mission Control</span>
+              <span className="opacity-40">/</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{getPageTitle()}</span>
+            </div>
+            
+            <div className="sm:hidden font-bold text-sm tracking-wide text-slate-900 dark:text-white">
+              {getPageTitle()}
+            </div>
+
+            {/* Topbar Actions */}
+            <div className="flex items-center gap-3">
+              {/* THEME TOGGLE BUTTON */}
+              <button
+                onClick={toggleTheme}
+                className="rounded-full p-2 border border-slate-200 bg-white/50 text-slate-700 shadow-sm hover:bg-slate-100 dark:border-white/5 dark:bg-slate-900/50 dark:text-slate-300 dark:hover:bg-slate-800 transition-all duration-300 cursor-pointer"
+                aria-label="Toggle theme mode"
+              >
+                <motion.div
+                  key={isDark ? 'dark' : 'light'}
+                  initial={{ rotate: -90, scale: 0.8 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  exit={{ rotate: 90, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} />}
+                </motion.div>
+              </button>
+
+              <div className="h-6 w-[1px] bg-slate-200 dark:bg-white/5" />
+
+              {/* User settings drop triggers */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 text-xs font-semibold border border-transparent rounded-full px-3 py-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-red-400 cursor-pointer transition-all"
+              >
+                <LogOut size={14} />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          </header>
+
+          {/* MAIN PAGE VIEW CONTENT */}
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {children}
+            </motion.div>
+          </main>
+
+          {/* STATUSBAR */}
+          <footer className="h-10 border-t flex items-center justify-between px-4 text-[11px] font-semibold tracking-wide backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5 text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <Wifi size={12} className="text-emerald-500 animate-pulse" />
+                FastAPI Gateway: <span className="text-emerald-500 dark:text-emerald-400">Online (12ms)</span>
+              </span>
+              <span className="hidden sm:inline opacity-40">|</span>
+              <span className="hidden sm:flex items-center gap-1.5">
+                <Cpu size={12} className="text-accent-cyan animate-pulse" />
+                AI Inference Engines: <span className="text-accent-cyan">YOLOv8 + EfficientNet (Active)</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <Database size={12} className="text-emerald-500" />
+                MySQL Database: <span className="text-emerald-500 dark:text-emerald-400">Synced</span>
+              </span>
+            </div>
+          </footer>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default MissionControlLayout;

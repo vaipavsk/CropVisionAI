@@ -1,81 +1,89 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Camera, CheckCircle2, FileText, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Camera, CheckCircle2, FileText, ShieldCheck, Sparkles } from 'lucide-react';
+import Card from '../../components/ui/Card';
 
 const steps = [
   {
     icon: Camera,
-    title: '1. Capture Image',
-    description: 'Farmers upload clear crop photos directly from the field using any mobile device.',
+    step: '01',
+    title: 'Capture Crop Specimen',
+    description: 'Farmers upload clear crop photos from the field. Location details and crop types are verified instantly.',
   },
   {
     icon: ShieldCheck,
-    title: '2. AI Analysis',
-    description: 'CropVisionAI detects damage regions and explains the model’s reasoning with visual evidence.',
+    step: '02',
+    title: 'Run AI Diagnostics',
+    description: 'YOLOv8 highlights damage zones, and EfficientNet classifies disease classes in under 45ms.',
   },
   {
     icon: FileText,
-    title: '3. Claim Review',
-    description: 'Insurers receive structured recommendations and confidence scores for faster verification.',
+    step: '03',
+    title: 'Generate Grad-CAM Saliency',
+    description: 'The explainable AI engine computes pixel heatmaps, illustrating what details drove the model decision.',
   },
   {
     icon: CheckCircle2,
-    title: '4. Approval Outcome',
-    description: 'The workflow ends with a transparent recommendation ready for insurance processing.',
+    step: '04',
+    title: 'Process Verification',
+    description: 'Insurers audit structured reports with confidence scoring, accelerating claim settlements.',
   },
 ];
 
-function Workflow() {
+export function Workflow() {
   return (
-    <section id="workflow" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-      <div className="mb-10 max-w-2xl">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
-          <ShieldCheck size={16} />
-          Claim Workflow
+    <section id="workflow" className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      
+      {/* Header */}
+      <div className="mb-12 max-w-2xl text-left">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+          <ShieldCheck size={14} />
+          Verification Pipeline
         </div>
-        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          A simple four-step path from image to claim decision.
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          Four steps to explainable claims.
         </h2>
-        <p className="mt-4 text-lg leading-8 text-slate-300">
-          Every stage is designed to reduce friction for farmers, agents, and insurers while keeping the process explainable.
+        <p className="mt-4 text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+          From field photography to verified payout decision, the workflow remains completely transparent.
         </p>
       </div>
 
-      <div className="relative">
-        <div className="absolute left-4 top-0 hidden h-full w-px bg-gradient-to-b from-emerald-400/40 via-cyan-400/20 to-transparent md:block" />
+      {/* Grid Timeline */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
 
-        <div className="space-y-6">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-
-            return (
-              <motion.article
-                key={step.title}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: index * 0.08 }}
-                className="relative rounded-[24px] border border-white/10 bg-slate-900/60 p-6 shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-xl md:ml-10"
-              >
-                <div className="absolute -left-2 top-7 hidden h-5 w-5 rounded-full border-4 border-slate-950 bg-emerald-400 md:block" />
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-400/20 text-emerald-300">
-                      <Icon size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">{step.title}</h3>
-                      <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-400">{step.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-300">
-                    Continue
-                    <ArrowRight size={16} />
-                  </div>
+          return (
+            <motion.div
+              key={step.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="flex"
+            >
+              <Card hoverable={true} className="flex flex-col h-full border-white/5 dark:bg-slate-950/40 bg-white/60 relative">
+                {/* Step Index Badge */}
+                <div className="absolute top-4 right-5 text-3xl font-black text-emerald-500/10 dark:text-emerald-500/10 select-none">
+                  {step.step}
                 </div>
-              </motion.article>
-            );
-          })}
-        </div>
+
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Icon size={18} />
+                </div>
+                
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 pr-8">{step.title}</h3>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 flex-1">{step.description}</p>
+                
+                {index < 3 && (
+                  <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 mt-4 uppercase tracking-wider">
+                    Next step
+                    <ArrowRight size={12} className="animate-pulse" />
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );

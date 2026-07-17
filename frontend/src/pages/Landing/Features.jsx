@@ -1,74 +1,77 @@
 import { motion } from 'framer-motion';
 import { BrainCircuit, Leaf, ScanSearch, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
+import Card from '../../components/ui/Card';
 
 const features = [
   {
     icon: ScanSearch,
     title: 'AI Crop Scanning',
-    description: 'Analyze farmer-captured images with high-accuracy visual inspection powered by modern computer vision models.',
+    description: 'Analyze farmer-captured images with high-accuracy visual inspection powered by custom YOLOv8 computer vision weights.',
   },
   {
     icon: BrainCircuit,
-    title: 'Explainable Insights',
-    description: 'Reveal which visual regions influenced the damage score so every decision remains transparent and traceable.',
+    title: 'Explainable AI heatmaps',
+    description: 'Reveal precisely which visual pixels and leaf zones influenced the diagnostic results using Grad-CAM saliency extraction.',
   },
   {
     icon: ShieldCheck,
-    title: 'Insurance-Ready Validation',
-    description: 'Generate structured evidence for claim review workflows with clear confidence and recommendation outputs.',
+    title: 'Insurance-Ready Auditing',
+    description: 'Generate immutable verification tokens and confidence ratings to feed claims adjudication systems.',
   },
   {
     icon: Leaf,
-    title: 'Crop Health Monitoring',
-    description: 'Track crop stress and damage severity across uploaded images to support faster assessment decisions.',
+    title: 'Crop Health Logs',
+    description: 'Track plant stress indicators, blight lesions, and pest damage severity thresholds through our diagnostic logs.',
   },
   {
     icon: TrendingUp,
-    title: 'Risk Intelligence',
-    description: 'Surface patterns in damage severity to support better underwriting, prioritization, and operational insights.',
+    title: 'Risk Underwriting Support',
+    description: 'Provide historical, regional disease density telemetry reports to build smarter agricultural insurance products.',
   },
   {
     icon: Sparkles,
-    title: 'Premium Workflow UX',
-    description: 'Deliver a polished, modern experience for insurers, agents, and farmers through a clean AI dashboard.',
+    title: 'Premium Control Center',
+    description: 'Empower scholars, claims adjusters, and agronomists through a clean, unified, glassmorphic cockpit.',
   },
 ];
 
-function Features() {
+export function Features() {
   return (
-    <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-      <div className="mb-10 max-w-2xl">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
-          <Sparkles size={16} />
+    <section id="features" className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mb-12 max-w-2xl text-left">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+          <Sparkles size={14} />
           Platform Capabilities
         </div>
-        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Built for fast, trustworthy crop claim assessment.
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          Built for trustworthy agricultural claims.
         </h2>
-        <p className="mt-4 text-lg leading-8 text-slate-300">
-          CropVisionAI combines modern vision models and explainable AI to support reliable, scalable verification workflows.
+        <p className="mt-4 text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+          CropVisionAI fuses deep learning and model explainability layers to deliver transparent crop damage analysis.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => {
           const Icon = feature.icon;
 
           return (
-            <motion.article
+            <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.45, delay: index * 0.06 }}
-              className="rounded-[24px] border border-white/10 bg-slate-900/60 p-6 shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-xl"
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+              className="flex"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-400/20 text-emerald-300">
-                <Icon size={20} />
-              </div>
-              <h3 className="text-xl font-semibold text-white">{feature.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-400">{feature.description}</p>
-            </motion.article>
+              <Card hoverable={true} className="flex flex-col h-full border-white/5 dark:bg-slate-950/40 bg-white/60">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-glass-glow">
+                  <Icon size={20} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400 flex-1">{feature.description}</p>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
