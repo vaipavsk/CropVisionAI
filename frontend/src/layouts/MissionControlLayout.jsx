@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useTheme } from '../theme';
+import useAuth from '../hooks/useAuth';
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -29,14 +30,19 @@ const sidebarItems = [
 
 export function MissionControlLayout({ children }) {
   const { isDark, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop collapse state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile toggle state
 
-  const handleLogout = () => {
-    // Basic navigation to home/login
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (err) {
+      // Gracefully handle logout issue
+    }
   };
 
   const getPageTitle = () => {

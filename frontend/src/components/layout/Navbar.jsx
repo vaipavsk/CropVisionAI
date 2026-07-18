@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { ArrowRight, Menu, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Menu, Sparkles, X, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth';
 
 const navItems = [
   { label: 'Home', href: '#home' },
@@ -10,6 +12,17 @@ const navItems = [
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (err) {
+      // Gracefully catch logout issues
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full">
@@ -17,7 +30,7 @@ function Navbar() {
         <nav className="rounded-full border border-emerald-400/20 bg-slate-900/70 shadow-[0_0_45px_rgba(16,185,129,0.18)] backdrop-blur-xl">
           <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <a href="#home" className="flex items-center gap-3" aria-label="CropVisionAI home">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/25">
                 <Sparkles size={18} />
               </div>
               <div>
@@ -41,19 +54,39 @@ function Navbar() {
             </div>
 
             <div className="hidden items-center gap-3 md:flex">
-              <a
-                href="#login"
-                className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 hover:border-emerald-400/40 hover:text-emerald-300"
-              >
-                Login
-              </a>
-              <a
-                href="#get-started"
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-emerald-500/25"
-              >
-                Get Started
-                <ArrowRight size={16} />
-              </a>
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 hover:border-emerald-400/40 hover:text-emerald-300"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-emerald-500/25 cursor-pointer"
+                  >
+                    Logout
+                    <LogOut size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 hover:border-emerald-400/40 hover:text-emerald-300"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-emerald-500/25"
+                  >
+                    Get Started
+                    <ArrowRight size={16} />
+                  </Link>
+                </>
+              )}
             </div>
 
             <button
@@ -82,19 +115,45 @@ function Navbar() {
               </div>
 
               <div className="mt-4 flex flex-col gap-2">
-                <a
-                  href="#login"
-                  className="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
-                >
-                  Login
-                </a>
-                <a
-                  href="#get-started"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950"
-                >
-                  Get Started
-                  <ArrowRight size={16} />
-                </a>
+                {user ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 cursor-pointer"
+                    >
+                      Logout
+                      <LogOut size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Get Started
+                      <ArrowRight size={16} />
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           )}

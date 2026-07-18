@@ -1,14 +1,14 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import Badge from "../../components/ui/Badge";
+
 import {
   ArrowRight,
   BrainCircuit,
   Leaf,
-  ScanSearch,
   ShieldCheck,
   Sparkles,
-} from 'lucide-react';
-
+} from "lucide-react";
 const featurePills = [
   'YOLOv8 Real-time Detection',
   'Grad-CAM Pixel Saliency Map',
@@ -19,7 +19,7 @@ const featurePills = [
 export function Hero() {
   return (
     <section id="home" className="relative isolate overflow-hidden min-h-[calc(100vh-80px)] flex items-center bg-slate-950">
-      
+
       {/* ANIMATED AI BACKGROUND */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         {/* Shifting organic blobs */}
@@ -49,9 +49,9 @@ export function Hero() {
           }}
           className="absolute bottom-1/4 right-1/4 h-[450px] w-[450px] rounded-full bg-cyan-500/10 blur-[110px]"
         />
-        
+
         {/* Lidar/Laser scan line running up and down */}
-        <motion.div 
+        <motion.div
           animate={{ y: ['-10%', '110%'] }}
           transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut' }}
           className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent z-0"
@@ -59,7 +59,7 @@ export function Hero() {
 
         {/* Digital Tech Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(16,185,129,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(16,185,129,0.04)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_75%,transparent_100%)]" />
-        
+
         {/* Pinging digital node stars */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/3 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" style={{ animationDuration: '4s' }} />
@@ -71,7 +71,7 @@ export function Hero() {
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 w-full z-10">
         <div className="grid w-full items-center gap-12 lg:grid-cols-12">
-          
+
           {/* HERO LEFT COLUMN */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -136,10 +136,10 @@ export function Hero() {
           >
             {/* Soft background glow */}
             <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-emerald-500/15 via-transparent to-cyan-500/15 blur-3xl" />
-            
+
             {/* Premium Outer Card */}
             <div className="relative rounded-[32px] border border-emerald-400/20 bg-slate-950/70 p-6 shadow-2xl backdrop-blur-xl">
-              
+
               {/* Top Panel bar */}
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
                 <div className="flex items-center gap-2.5">
@@ -151,13 +151,13 @@ export function Hero() {
 
               {/* Inside Mock Screen */}
               <div className="relative rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                
+
                 {/* Simulated Lidar Scan Area */}
                 <div className="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl border border-emerald-500/20 bg-slate-950">
-                  
+
                   {/* Grid inside monitor */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:16px_16px]" />
-                  
+
                   {/* Neon HUD outline */}
                   <div className="absolute inset-3 rounded-lg border border-dashed border-emerald-400/20 flex flex-col justify-between p-3 font-mono text-[9px] text-slate-500">
                     <div className="flex justify-between">
