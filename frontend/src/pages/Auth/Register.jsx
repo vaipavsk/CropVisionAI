@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
 import useAuth from '../../hooks/useAuth';
+import useRole from '../../hooks/useRole';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/common/Button';
@@ -11,6 +12,7 @@ import Button from '../../components/common/Button';
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { syncUserRegistration } = useRole();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -77,6 +79,9 @@ export default function Register() {
           displayName: fullName.trim()
         });
       }
+
+      // 3. Synchronize user profile into MySQL database
+      await syncUserRegistration(fullName.trim());
 
       navigate('/dashboard');
     } catch (err) {

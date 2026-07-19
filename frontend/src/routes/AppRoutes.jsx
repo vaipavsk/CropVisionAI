@@ -6,8 +6,12 @@ import DashboardShowcase from '../pages/DashboardShowcase';
 import Login from '../pages/Auth/Login';
 import Register from '../pages/Auth/Register';
 import ForgotPassword from '../pages/Auth/ForgotPassword';
+import Analysis from '../pages/Analysis/Analysis';
 import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
+import { FarmerRoute, InspectorRoute, AdminRoute } from './RoleRoute';
+import InspectorDashboard from '../pages/Inspector/InspectorDashboard';
+import AdminDashboard from '../pages/Admin/AdminDashboard';
 
 export function AppRoutes() {
   return (
@@ -24,39 +28,57 @@ export function AppRoutes() {
 
       {/* Protected Mission Control Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route
-          path="/dashboard"
-          element={
-            <MissionControlLayout>
-              <Dashboard />
-            </MissionControlLayout>
-          }
-        />
+        {/* Farmer Specific Routes */}
+        <Route element={<FarmerRoute />}>
+          <Route
+            path="/dashboard"
+            element={
+              <MissionControlLayout>
+                <Dashboard />
+              </MissionControlLayout>
+            }
+          />
 
+          <Route
+            path="/analysis"
+            element={
+              <MissionControlLayout>
+                <Analysis />
+              </MissionControlLayout>
+            }
+          />
+        </Route>
+
+        {/* Inspector Specific Routes */}
+        <Route element={<InspectorRoute />}>
+          <Route
+            path="/inspector"
+            element={
+              <MissionControlLayout>
+                <InspectorDashboard />
+              </MissionControlLayout>
+            }
+          />
+        </Route>
+
+        {/* Admin Specific Routes */}
+        <Route element={<AdminRoute />}>
+          <Route
+            path="/admin"
+            element={
+              <MissionControlLayout>
+                <AdminDashboard />
+              </MissionControlLayout>
+            }
+          />
+        </Route>
+
+        {/* Shared Clearances / Common Routes */}
         <Route
           path="/showcase"
           element={
             <MissionControlLayout>
               <DashboardShowcase />
-            </MissionControlLayout>
-          }
-        />
-
-        <Route
-          path="/analysis"
-          element={
-            <MissionControlLayout>
-              <div className="space-y-6">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent dark:from-emerald-400 dark:to-teal-300">
-                  Crop Analysis Engine
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400">
-                  Run YOLOv8 leaf detection and EfficientNet disease classification models with Grad-CAM heatmaps.
-                </p>
-                <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 p-12 text-center text-slate-400 dark:text-slate-500">
-                  Drag and drop crop specimen images here to initialize scan...
-                </div>
-              </div>
             </MissionControlLayout>
           }
         />

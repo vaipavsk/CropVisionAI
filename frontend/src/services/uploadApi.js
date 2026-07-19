@@ -7,7 +7,7 @@ import api, { handleApiError } from './api';
  */
 export const uploadImage = async (file) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('image', file);
 
   try {
     const response = await api.post('/upload', formData, {

@@ -9,12 +9,16 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.upload import Upload
+from app.models.user import User, UserRole
+from app.security.roles import RoleChecker
 from app.services.prediction_models import PredictionResponse
 from app.services.prediction_service import PredictionService, PredictionServiceError
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/predict", tags=["prediction"])
+
+get_farmer_user = Depends(RoleChecker([UserRole.FARMER]))
 
 
 @router.post(
@@ -25,6 +29,7 @@ router = APIRouter(prefix="/predict", tags=["prediction"])
 def predict_crop_damage(
     upload_id: int,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, get_farmer_user],
 ) -> PredictionResponse:
     """Run the orchestrated crop damage prediction pipeline on the uploaded image.
 

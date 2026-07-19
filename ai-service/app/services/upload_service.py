@@ -26,7 +26,7 @@ class UploadService:
         self.upload_dir = self.settings.upload_dir
         self.upload_dir.mkdir(parents=True, exist_ok=True)
 
-    def create_upload(self, image: UploadFile) -> UploadResponse:
+    def create_upload(self, image: UploadFile, user_id: int | None = None) -> UploadResponse:
         """Validate, store, and persist an uploaded image."""
         self._validate_file(image)
 
@@ -64,6 +64,7 @@ class UploadService:
             mime_type=image.content_type,
             file_size_bytes=len(contents),
             status=UploadStatus.PENDING_ANALYSIS,
+            user_id=user_id,
         )
 
         try:

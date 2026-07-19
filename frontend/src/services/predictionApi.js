@@ -7,7 +7,7 @@ import api, { handleApiError } from './api';
  */
 export const predict = async (uploadId) => {
   try {
-    const response = await api.post('/predict', { uploadId });
+    const response = await api.post(`/predict/${uploadId}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);

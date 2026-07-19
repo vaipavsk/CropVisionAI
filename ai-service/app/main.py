@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import health_router, placeholder_router, prediction_router, upload_router
+from app.routers import health_router, placeholder_router, prediction_router, upload_router, user_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(placeholder_router)
     app.include_router(prediction_router)
     app.include_router(upload_router)
+    app.include_router(user_router)
 
     @app.get("/", tags=["health"])
     def root() -> dict[str, str]:
