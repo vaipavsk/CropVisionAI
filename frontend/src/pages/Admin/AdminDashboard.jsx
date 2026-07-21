@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Users, UserCheck, Settings, Trash2, Edit3, UserPlus, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Users, UserCheck, Settings, Trash2, Edit3, UserPlus, RefreshCw, AlertCircle, CheckCircle, Search, ToggleLeft, ToggleRight, UserCog } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/ui/Badge';
@@ -8,6 +8,7 @@ import api from '../../services/api';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -59,7 +60,7 @@ export default function AdminDashboard() {
         status
       };
       await api.post('/users', newUser);
-      setSuccess('User registered successfully in local database.');
+      setSuccess(`User pre-registered as ${role} in local MySQL database.`);
       resetForm();
       fetchUsers();
     } catch (err) {
@@ -88,6 +89,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleStatus = async (user) => {
+    setError('');
+    setSuccess('');
+    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      await api.put(`/users/${user.id}`, { status: newStatus });
+      setSuccess(`User status updated to ${newStatus}.`);
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update user status.');
+    }
+  };
+
+  const handleQuickRoleChange = async (user, newRole) => {
+    if (user.role === newRole) return;
+    setError('');
+    setSuccess('');
+    try {
+      await api.put(`/users/${user.id}`, { role: newRole });
+      setSuccess(`User role updated to ${newRole}.`);
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update user role.');
+    }
+  };
+
   const handleDelete = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user from MySQL? This action is irreversible.')) {
       return;
@@ -113,6 +140,12 @@ export default function AdminDashboard() {
     setShowAddForm(true);
   };
 
+  const openInspectorProvisionForm = () => {
+    resetForm();
+    setRole('INSPECTOR');
+    setShowAddForm(true);
+  };
+
   const resetForm = () => {
     setShowAddForm(false);
     setEditingUser(null);
@@ -122,6 +155,16 @@ export default function AdminDashboard() {
     setRole('FARMER');
     setStatus('ACTIVE');
   };
+
+  const filteredUsers = users.filter((u) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      u.full_name?.toLowerCase().includes(term) ||
+      u.email?.toLowerCase().includes(term) ||
+      u.role?.toLowerCase().includes(term) ||
+      u.status?.toLowerCase().includes(term)
+    );
+  });
 
   const getRoleBadge = (r) => {
     if (r === 'ADMIN') return <Badge variant="success">Admin</Badge>;
@@ -217,12 +260,12 @@ export default function AdminDashboard() {
         {/* Users Table List */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-white/5">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Users size={18} className="text-slate-400" />
                 User Profiles (MySQL Database)
               </h2>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={fetchUsers}
                   className="p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition"
@@ -230,6 +273,13 @@ export default function AdminDashboard() {
                 >
                   <RefreshCw size={15} />
                 </button>
+                <Button
+                  variant="secondary"
+                  onClick={openInspectorProvisionForm}
+                  className="flex items-center gap-1.5 py-1.5 px-3 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"
+                >
+                  <UserCog size={14} /> Provision Inspector
+                </Button>
                 <Button
                   variant="primary"
                   onClick={() => {
@@ -243,8 +293,22 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Search Filter Bar */}
+            <div className="mb-4 relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search users by name, email, or role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+              />
+            </div>
+
             {loading ? (
               <div className="text-center py-8 text-slate-400">Loading database entries...</div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">No users match your search query.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
@@ -258,13 +322,30 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                    {users.map((u) => (
+                    {filteredUsers.map((u) => (
                       <tr key={u.id} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-white/5 transition">
                         <td className="py-3.5 font-bold text-slate-800 dark:text-slate-250">{u.full_name}</td>
                         <td className="py-3.5">{u.email}</td>
-                        <td className="py-3.5">{getRoleBadge(u.role)}</td>
+                        <td className="py-3.5">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleQuickRoleChange(u, e.target.value)}
+                            className="bg-transparent border border-slate-200 dark:border-white/10 rounded-lg p-1 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          >
+                            <option value="FARMER">FARMER</option>
+                            <option value="INSPECTOR">INSPECTOR</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
+                        </td>
                         <td className="py-3.5">{getStatusBadge(u.status)}</td>
                         <td className="py-3.5 text-right flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleToggleStatus(u)}
+                            className={`p-1.5 transition ${u.status === 'ACTIVE' ? 'text-emerald-500 hover:text-amber-500' : 'text-slate-400 hover:text-emerald-500'}`}
+                            title={u.status === 'ACTIVE' ? "Deactivate User" : "Activate User"}
+                          >
+                            {u.status === 'ACTIVE' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                          </button>
                           <button
                             onClick={() => startEdit(u)}
                             className="p-1.5 text-slate-400 hover:text-emerald-500 transition"

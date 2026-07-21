@@ -19,12 +19,15 @@ export const RoleProvider = ({ children }) => {
         setRoleUser(response.data);
         setRole(response.data.role);
         setStatus(response.data.status);
+        return response.data;
       }
+      return null;
     } catch (err) {
-      console.error('Failed to retrieve database user profile:', err);
+      console.warn('Failed to retrieve database user profile:', err?.response?.data?.detail || err.message);
       setRoleUser(null);
       setRole(null);
       setStatus(null);
+      return null;
     } finally {
       setLoadingRole(false);
     }
@@ -67,7 +70,8 @@ export const RoleProvider = ({ children }) => {
     status,
     loadingRole: authLoading || loadingRole,
     syncUserRegistration,
-    refreshRoleProfile: fetchRoleProfile
+    refreshRoleProfile: fetchRoleProfile,
+    fetchRoleProfile
   };
 
   return (

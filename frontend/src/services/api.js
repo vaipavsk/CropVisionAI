@@ -37,18 +37,25 @@ api.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle 401 Unauthorized errors
+// Response Interceptor: Handle 401 Unauthorized errors gracefully
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response && error.response.status === 401) {
+    const originalRequest = error.config;
+    // Do not force logout/redirect for registration or initial me check endpoints
+    const isAuthCheckOrRegister = originalRequest?.url?.includes('/users/me') || originalRequest?.url?.includes('/users/register');
+    const skipRedirect = originalRequest?._skip401Redirect;
+
+    if (error.response && error.response.status === 401 && !isAuthCheckOrRegister && !skipRedirect) {
+      console.warn('Unauthorized request detected. Session expired.');
       try {
         await signOut(auth);
       } catch (signoutErr) {
-        // Sign out fails, continue redirect
+        console.error('Signout error:', signoutErr);
       }
-      // Redirect to login page
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

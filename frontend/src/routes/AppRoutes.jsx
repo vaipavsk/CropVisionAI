@@ -47,6 +47,15 @@ export function AppRoutes() {
               </MissionControlLayout>
             }
           />
+
+          <Route
+            path="/upload"
+            element={
+              <MissionControlLayout>
+                <Analysis />
+              </MissionControlLayout>
+            }
+          />
         </Route>
 
         {/* Inspector Specific Routes */}

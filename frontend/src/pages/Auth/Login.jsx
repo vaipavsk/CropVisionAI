@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Sparkles, AlertCircle } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import useRole from '../../hooks/useRole';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/common/Button';
@@ -10,6 +11,7 @@ import Button from '../../components/common/Button';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { fetchRoleProfile } = useRole();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,14 +62,37 @@ export default function Login() {
       } else {
         localStorage.removeItem('remembered_email');
       }
-      
-      navigate('/dashboard');
+
+      // Fetch backend database profile to verify status and role
+      const userProfile = await fetchRoleProfile();
+
+      if (!userProfile) {
+        setError('User account not found in database. Please complete registration.');
+        return;
+      }
+
+      if (userProfile.status === 'INACTIVE') {
+        setError('User account is deactivated. Please contact administration.');
+        return;
+      }
+
+      // Navigate based on backend role clearance
+      if (userProfile.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (userProfile.role === 'INSPECTOR') {
+        navigate('/inspector');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
+      console.error('Login error:', err);
       // Firebase standard auth errors mapping
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
       } else if (err.code === 'auth/too-many-requests') {
         setError('Account temporarily disabled due to too many failed login attempts. Please try again later.');
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
       } else {
         setError(err.message || 'Failed to sign in. Please try again.');
       }

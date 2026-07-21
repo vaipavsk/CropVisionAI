@@ -1,20 +1,18 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import useRole from '../hooks/useRole';
 import Loading from '../components/ui/Loading';
 
 /**
  * Route protection wrapper component.
  * Redirects unauthenticated users to the Login page and displays a themed loading
  * screen while verifying the user's authentication state.
- * 
- * Supports both children pattern and Outlet pattern:
- * - <ProtectedRoute><Dashboard /></ProtectedRoute>
- * - <Route element={<ProtectedRoute />}><Route path="/dashboard" element={<Dashboard />} /></Route>
  */
 export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
+  const { status, loadingRole } = useRole();
 
-  if (loading) {
+  if (loading || (user && loadingRole)) {
     return (
       <Loading 
         message="Authenticating session..." 
@@ -24,6 +22,10 @@ export function ProtectedRoute({ children }) {
   }
 
   if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (status === 'INACTIVE') {
     return <Navigate to="/login" replace />;
   }
 

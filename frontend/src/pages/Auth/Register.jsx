@@ -85,13 +85,18 @@ export default function Register() {
 
       navigate('/dashboard');
     } catch (err) {
+      console.error('Registration error:', err);
       // Firebase standard auth errors mapping
       if (err.code === 'auth/email-already-in-use') {
         setError('An account with this email address already exists.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Invalid email address format.');
       } else if (err.code === 'auth/weak-password') {
-        setError('Firebase validation: The password is too weak.');
+        setError('The password is too weak. Please use at least 6 characters.');
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.request && !err.response) {
+        setError('Unable to connect to backend server. Please verify the API backend is running.');
       } else {
         setError(err.message || 'Failed to create an account. Please try again.');
       }
@@ -120,10 +125,10 @@ export default function Register() {
             <Sparkles size={22} className="animate-pulse" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300">
-            Create Inspector Account
+            Create CropVisionAI Account
           </h1>
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-500 dark:text-emerald-400 font-bold mt-1.5">
-            CropVisionAI Claim Underwriter
+            Farmer & Scholar Registration
           </p>
         </div>
 

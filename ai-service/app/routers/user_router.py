@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,8 @@ from app.models.user import User, UserRole, UserStatus
 from app.security.roles import RoleChecker
 from app.schemas.user import UserCreate, UserRegister, UserResponse, UserUpdate
 from app.services import user_service
+
+logger = logging.getLogger("cropvision.user_router")
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -35,7 +38,10 @@ def register_user(
     firebase_uid = decoded_token.get("uid")
     email = decoded_token.get("email")
 
+    logger.info(f"Self-registration attempt for email '{email}' (UID: {firebase_uid})")
+
     if not firebase_uid or not email:
+        logger.warning("Registration failed: Firebase token missing email or UID claim.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Firebase token missing email or UID claim.",
@@ -44,12 +50,13 @@ def register_user(
     # Check if user already exists
     existing_user = user_service.get_user_by_firebase_uid(db, firebase_uid)
     if existing_user:
-        # User already exists, return current record
+        logger.info(f"User with UID '{firebase_uid}' already registered. Returning profile.")
         return existing_user
 
     # Double check if email already registered to someone else
     existing_email = user_service.get_user_by_email(db, email)
     if existing_email:
+        logger.warning(f"Registration failed: Email address '{email}' already registered.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email address is already in use.",
@@ -63,7 +70,9 @@ def register_user(
         role=UserRole.FARMER,
         status=UserStatus.ACTIVE,
     )
-    return user_service.create_user(db, user_in)
+    new_user = user_service.create_user(db, user_in)
+    logger.info(f"Successfully registered new FARMER user in MySQL: '{email}' (ID: {new_user.id})")
+    return new_user
 
 
 @router.get("/me", response_model=UserResponse)
