@@ -57,7 +57,7 @@ function Navbar() {
               {user ? (
                 <>
                   <Link
-                    to="/dashboard"
+                    to="/farmer/dashboard"
                     className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 hover:border-emerald-400/40 hover:text-emerald-300"
                   >
                     Dashboard
@@ -73,16 +73,16 @@ function Navbar() {
               ) : (
                 <>
                   <Link
-                    to="/login"
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 hover:border-emerald-400/40 hover:text-emerald-300"
+                    to="/farmer/login"
+                    className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300 transition-all duration-300 hover:bg-emerald-500/20"
                   >
-                    Login
+                    Farmer Portal
                   </Link>
                   <Link
-                    to="/register"
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-emerald-500/25"
+                    to="/inspector/login"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-bold text-slate-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-emerald-500/25"
                   >
-                    Get Started
+                    Inspector Portal
                     <ArrowRight size={16} />
                   </Link>
                 </>
@@ -118,7 +118,7 @@ function Navbar() {
                 {user ? (
                   <>
                     <Link
-                      to="/dashboard"
+                      to="/farmer/dashboard"
                       className="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -138,18 +138,18 @@ function Navbar() {
                 ) : (
                   <>
                     <Link
-                      to="/login"
-                      className="rounded-full border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                      to="/farmer/login"
+                      className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-center text-sm font-bold text-emerald-300 transition hover:bg-emerald-500/20"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Login
+                      Farmer Portal
                     </Link>
                     <Link
-                      to="/register"
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950"
+                      to="/inspector/login"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-bold text-slate-950"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Get Started
+                      Inspector Portal
                       <ArrowRight size={16} />
                     </Link>
                   </>

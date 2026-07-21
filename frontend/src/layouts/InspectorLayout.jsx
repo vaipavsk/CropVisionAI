@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  Sprout,
+  Clock,
+  CheckCircle,
+  XCircle,
   FileText,
   User,
   Sun,
@@ -16,38 +18,42 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../theme';
 import useAuth from '../hooks/useAuth';
 
-const sidebarItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Crop Analysis', path: '/analysis', icon: Sprout },
-  { label: 'Reports', path: '/reports', icon: FileText },
-  { label: 'Profile', path: '/profile', icon: User },
-];
-
-export function MissionControlLayout({ children }) {
+export function InspectorLayout({ children, activeTab, setActiveTab }) {
   const { isDark, toggleTheme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop collapse state
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile toggle state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const sidebarItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'pending', label: 'Pending Claims', icon: Clock },
+    { id: 'approved', label: 'Approved Claims', icon: CheckCircle },
+    { id: 'rejected', label: 'Rejected Claims', icon: XCircle },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'profile', label: 'Profile', icon: User },
+  ];
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/inspector/login');
     } catch (err) {
-      // Gracefully handle logout issue
+      console.error('Logout error:', err);
     }
   };
 
+  const currentTab = activeTab || 'dashboard';
+
   const getPageTitle = () => {
-    const activeItem = sidebarItems.find((item) => item.path === location.pathname);
-    return activeItem ? activeItem.label : 'Mission Control';
+    const activeItem = sidebarItems.find((item) => item.id === currentTab);
+    return activeItem ? activeItem.label : 'Inspector Dashboard';
   };
 
   return (
@@ -71,9 +77,9 @@ export function MissionControlLayout({ children }) {
         >
           {/* Sidebar Header */}
           <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/50 dark:border-white/5">
-            <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden">
+            <Link to="/inspector/dashboard" className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-slate-950 shadow-md shadow-emerald-500/10">
-                <Sparkles size={18} className="animate-pulse" />
+                <ShieldCheck size={18} />
               </div>
               {isSidebarOpen && (
                 <motion.div
@@ -83,7 +89,7 @@ export function MissionControlLayout({ children }) {
                 >
                   <p className="text-sm font-bold tracking-wide text-slate-900 dark:text-white leading-none">CropVisionAI</p>
                   <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-500 dark:text-emerald-400">
-                    XAI Predictor
+                    Inspector Portal
                   </span>
                 </motion.div>
               )}
@@ -93,24 +99,25 @@ export function MissionControlLayout({ children }) {
           {/* Sidebar Navigation */}
           <nav className="flex-1 space-y-1.5 px-3 py-4">
             {sidebarItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = currentTab === item.id;
               const Icon = item.icon;
               return (
-                <Link
-                  key={item.label}
-                  to={item.path}
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (setActiveTab) setActiveTab(item.id);
+                  }}
                   className={`
-                    relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium tracking-wide transition-all duration-300 outline-none
+                    w-full relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium tracking-wide transition-all duration-300 outline-none cursor-pointer
                     ${isActive 
                       ? 'text-emerald-600 dark:text-emerald-300 font-semibold' 
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
                     }
                   `}
                 >
-                  {/* Sliding active pill indicator */}
                   {isActive && (
                     <motion.div
-                      layoutId="activeIndicator"
+                      layoutId="activeInspectorIndicator"
                       className="absolute inset-0 z-0 rounded-xl bg-emerald-500/10 border-l-[3px] border-emerald-500 dark:bg-emerald-500/10"
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
@@ -129,21 +136,23 @@ export function MissionControlLayout({ children }) {
                       {item.label}
                     </motion.span>
                   )}
-                </Link>
+                </button>
               );
             })}
           </nav>
 
-          {/* Sidebar Footer with Collapse Control */}
+          {/* Sidebar Footer */}
           <div className="p-3 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
             {isSidebarOpen && (
               <div className="flex items-center gap-3 overflow-hidden">
                 <div className="h-8 w-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                  VK
+                  IP
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-semibold leading-tight text-slate-800 dark:text-white">Vipin Kumar</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Portal User</p>
+                  <p className="text-xs font-semibold leading-tight text-slate-800 dark:text-white truncate max-w-[120px]">
+                    {user?.displayName || user?.email?.split('@')[0] || 'Inspector User'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Claim Inspector</p>
                 </div>
               </div>
             )}
@@ -160,7 +169,6 @@ export function MissionControlLayout({ children }) {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <div className="fixed inset-0 z-40 md:hidden flex">
-              {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -169,7 +177,6 @@ export function MissionControlLayout({ children }) {
                 className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
               />
 
-              {/* Drawer Container */}
               <motion.aside
                 initial={{ x: '-100%' }}
                 animate={{ x: 0 }}
@@ -180,12 +187,12 @@ export function MissionControlLayout({ children }) {
                 <div className="flex h-16 items-center justify-between px-4 border-b border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-slate-950 shadow-md">
-                      <Sparkles size={18} />
+                      <ShieldCheck size={18} />
                     </div>
                     <div>
                       <p className="text-sm font-bold tracking-wide">CropVisionAI</p>
                       <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-400">
-                        XAI Predictor
+                        Inspector Portal
                       </span>
                     </div>
                   </div>
@@ -199,27 +206,26 @@ export function MissionControlLayout({ children }) {
 
                 <nav className="flex-1 space-y-1.5 px-3 py-4">
                   {sidebarItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = currentTab === item.id;
                     const Icon = item.icon;
                     return (
-                      <Link
-                        key={item.label}
-                        to={item.path}
-                        onClick={() => setIsMobileMenuOpen(false)}
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          if (setActiveTab) setActiveTab(item.id);
+                          setIsMobileMenuOpen(false);
+                        }}
                         className={`
-                          relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-300
+                          w-full relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-300 text-left
                           ${isActive 
-                            ? 'text-emerald-300 font-semibold' 
+                            ? 'text-emerald-300 font-semibold bg-emerald-500/10 border-l-[3px] border-emerald-500' 
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                           }
                         `}
                       >
-                        {isActive && (
-                          <div className="absolute inset-0 rounded-xl bg-emerald-500/10 border-l-[3px] border-emerald-500" />
-                        )}
                         <Icon size={18} className={isActive ? 'text-emerald-400' : ''} />
                         <span>{item.label}</span>
-                      </Link>
+                      </button>
                     );
                   })}
                 </nav>
@@ -227,11 +233,10 @@ export function MissionControlLayout({ children }) {
                 <div className="p-4 border-t border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300 font-bold text-xs">
-                      VK
+                      IP
                     </div>
                     <div className="text-left">
-                      <p className="text-xs font-semibold text-white">Vipin Kumar</p>
-                      <p className="text-[10px] text-slate-400 font-medium">Portal User</p>
+                      <p className="text-xs font-semibold text-white">Inspector User</p>
                     </div>
                   </div>
                   <button
@@ -253,7 +258,6 @@ export function MissionControlLayout({ children }) {
           {/* TOPBAR */}
           <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5">
             
-            {/* Mobile hamburger trigger */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white md:hidden cursor-pointer"
@@ -262,9 +266,8 @@ export function MissionControlLayout({ children }) {
               <Menu size={20} />
             </button>
 
-            {/* Page title / Breadcrumbs */}
             <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span className="opacity-80">Mission Control</span>
+              <span className="opacity-80">Inspector Dashboard</span>
               <span className="opacity-40">/</span>
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">{getPageTitle()}</span>
             </div>
@@ -273,9 +276,7 @@ export function MissionControlLayout({ children }) {
               {getPageTitle()}
             </div>
 
-            {/* Topbar Actions */}
             <div className="flex items-center gap-3">
-              {/* THEME TOGGLE BUTTON */}
               <button
                 onClick={toggleTheme}
                 className="rounded-full p-2 border border-slate-200 bg-white/50 text-slate-700 shadow-sm hover:bg-slate-100 dark:border-white/5 dark:bg-slate-900/50 dark:text-slate-300 dark:hover:bg-slate-800 transition-all duration-300 cursor-pointer"
@@ -294,7 +295,6 @@ export function MissionControlLayout({ children }) {
 
               <div className="h-6 w-[1px] bg-slate-200 dark:bg-white/5" />
 
-              {/* User settings drop triggers */}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-1 text-xs font-semibold border border-transparent rounded-full px-3 py-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-red-400 cursor-pointer transition-all"
@@ -308,7 +308,7 @@ export function MissionControlLayout({ children }) {
           {/* MAIN PAGE VIEW CONTENT */}
           <main className="flex-1 p-4 md:p-6 lg:p-8">
             <motion.div
-              key={location.pathname}
+              key={currentTab}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
@@ -326,8 +326,8 @@ export function MissionControlLayout({ children }) {
               </span>
               <span className="hidden sm:inline opacity-40">|</span>
               <span className="hidden sm:flex items-center gap-1.5">
-                <Cpu size={12} className="text-accent-cyan animate-pulse" />
-                AI Inference Engines: <span className="text-accent-cyan">YOLOv8 + EfficientNet (Active)</span>
+                <Cpu size={12} className="text-cyan-500 animate-pulse" />
+                Underwriting Intelligence: <span className="text-cyan-500">Active</span>
               </span>
             </div>
             <div className="flex items-center gap-4">
@@ -344,4 +344,4 @@ export function MissionControlLayout({ children }) {
   );
 }
 
-export default MissionControlLayout;
+export default InspectorLayout;

@@ -26,24 +26,25 @@ export function CTA() {
               Ready to explore crop diagnostics?
             </h2>
             <p className="mt-4 text-base text-slate-300 leading-relaxed">
-              Launch our Mission Control hub to analyze crop disease symptoms, review prediction reports, and audit explainable Grad-CAM heatmaps.
+              Access CropVisionAI portals to analyze crop disease symptoms, submit insurance claims, or inspect underwriting diagnostics.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
             <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-md shadow-emerald-500/15 hover:scale-[1.02] transition"
+              to="/farmer/login"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-md shadow-emerald-500/15 hover:scale-[1.02] transition"
             >
-              Enter Mission Control
+              Farmer Portal
               <ArrowRight size={16} />
             </Link>
-            <a
-              href="#features"
-              className="rounded-xl border border-white/10 bg-slate-800/40 px-6 py-3.5 text-sm font-semibold text-slate-200 hover:border-emerald-400/40 hover:text-emerald-300 transition"
+            <Link
+              to="/inspector/login"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-6 py-3.5 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20 transition"
             >
-              View Technologies
-            </a>
+              Inspector Portal
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </motion.div>

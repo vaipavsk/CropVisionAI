@@ -8,6 +8,7 @@ import {
   Leaf,
   ShieldCheck,
   Sparkles,
+  Sprout,
 } from "lucide-react";
 const featurePills = [
   'YOLOv8 Real-time Detection',
@@ -81,7 +82,7 @@ export function Hero() {
           >
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
               <Sparkles size={14} className="animate-pulse" />
-              M.Tech Research Initiative
+              Crop Intelligence Initiative
             </div>
 
             <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight">
@@ -95,20 +96,24 @@ export function Hero() {
               CropVisionAI automates crop insurance verification by analyzing farmer-captured images, detecting visible damage using YOLOv8, and explaining decisions with Grad-CAM saliency heatmaps.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.03] hover:shadow-emerald-500/30"
+                to="/farmer/login"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.03] hover:shadow-emerald-500/30"
               >
-                Access Mission Control
+                <Sprout size={18} />
+                Farmer Portal
                 <ArrowRight size={16} />
               </Link>
-              <a
-                href="#features"
-                className="rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-semibold text-slate-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              <span className="text-xs uppercase font-bold tracking-widest text-slate-500">OR</span>
+              <Link
+                to="/inspector/login"
+                className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-6 py-3.5 text-sm font-bold text-emerald-300 transition-all hover:bg-emerald-500/20 hover:border-emerald-400/60 hover:scale-[1.03]"
               >
-                Explore Technology
-              </a>
+                <ShieldCheck size={18} className="text-emerald-400" />
+                Inspector Portal
+                <ArrowRight size={16} />
+              </Link>
             </div>
 
             <div className="mt-10 border-t border-white/5 pt-8">

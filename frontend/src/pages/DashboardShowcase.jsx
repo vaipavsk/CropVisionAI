@@ -306,7 +306,7 @@ export function DashboardShowcase() {
       >
         <div className="space-y-5">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Configure target crop type and active diagnostic confidence parameters for your M.Tech project research analysis.
+            Configure target crop type and active diagnostic confidence parameters for your CropVisionAI research analysis.
           </p>
 
           <Input

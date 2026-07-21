@@ -1,32 +1,25 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import useRole from '../hooks/useRole';
 import Loading from '../components/ui/Loading';
 
 /**
  * Route protection wrapper component.
- * Redirects unauthenticated users to the Login page and displays a themed loading
- * screen while verifying the user's authentication state.
+ * Redirects unauthenticated users to the portal login page.
  */
-export function ProtectedRoute({ children }) {
+export function ProtectedRoute({ children, fallbackPath = '/farmer/login' }) {
   const { user, loading } = useAuth();
-  const { status, loadingRole } = useRole();
 
-  if (loading || (user && loadingRole)) {
+  if (loading) {
     return (
       <Loading 
         message="Authenticating session..." 
-        submessage="Verifying secure credentials" 
+        submessage="Verifying credentials" 
       />
     );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (status === 'INACTIVE') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return children ? children : <Outlet />;

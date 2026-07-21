@@ -83,7 +83,7 @@ export default function Register() {
       // 3. Synchronize user profile into MySQL database
       await syncUserRegistration(fullName.trim());
 
-      navigate('/dashboard');
+      navigate('/farmer/dashboard');
     } catch (err) {
       console.error('Registration error:', err);
       // Firebase standard auth errors mapping
@@ -125,10 +125,10 @@ export default function Register() {
             <Sparkles size={22} className="animate-pulse" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300">
-            Create CropVisionAI Account
+            Create Farmer Account
           </h1>
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-500 dark:text-emerald-400 font-bold mt-1.5">
-            Farmer & Scholar Registration
+            Farmer Registration
           </p>
         </div>
 
@@ -164,8 +164,8 @@ export default function Register() {
             <Input
               id="email"
               type="email"
-              label="Research Email"
-              placeholder="vipin.kumar@research.edu"
+              label="Farmer Email"
+              placeholder="farmer@example.com"
               icon={Mail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -249,9 +249,9 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            <span>Already have an credentials profile? </span>
+            <span>Already have a farmer account? </span>
             <Link
-              to="/login"
+              to="/farmer/login"
               className="font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300 transition"
             >
               Sign in instead

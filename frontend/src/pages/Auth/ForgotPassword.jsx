@@ -108,8 +108,8 @@ export default function ForgotPassword() {
             <Input
               id="email"
               type="email"
-              label="Scholar Email Address"
-              placeholder="vipin.kumar@research.edu"
+              label="Registered Email Address"
+              placeholder="user@example.com"
               icon={Mail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -129,11 +129,11 @@ export default function ForgotPassword() {
 
           <div className="mt-6 border-t border-slate-200/60 dark:border-white/5 pt-4 text-center">
             <Link
-              to="/login"
+              to="/farmer/login"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition group"
             >
               <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-              Return to login portal
+              Return to Farmer Login
             </Link>
           </div>
         </Card>

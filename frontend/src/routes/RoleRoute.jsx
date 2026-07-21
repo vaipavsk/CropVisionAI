@@ -1,53 +1,40 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import useRole from '../hooks/useRole';
 import Loading from '../components/ui/Loading';
 
 /**
- * Route protection wrapper based on user roles.
- * Verifies both authentication and role clearances.
+ * Portal route wrapper without automatic database role checks.
+ * Simple authentication state check.
  */
-export function RoleRoute({ roles = [], children }) {
+export function RoleRoute({ fallbackPath = '/farmer/login', children }) {
   const { user, loading: authLoading } = useAuth();
-  const { role, loadingRole } = useRole();
 
-  if (authLoading || loadingRole) {
+  if (authLoading) {
     return (
       <Loading 
-        message="Resolving role clearances..." 
-        submessage="Checking secure credential permissions" 
+        message="Resolving session..." 
+        submessage="Checking credentials" 
       />
     );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (roles.length > 0 && !roles.includes(role)) {
-    // Redirect unauthorized user to their respective default home dashboard
-    if (role === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
-    } else if (role === 'INSPECTOR') {
-      return <Navigate to="/inspector" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return children ? children : <Outlet />;
 }
 
 export function FarmerRoute({ children }) {
-  return <RoleRoute roles={['FARMER']}>{children}</RoleRoute>;
+  return <RoleRoute fallbackPath="/farmer/login">{children}</RoleRoute>;
 }
 
 export function InspectorRoute({ children }) {
-  return <RoleRoute roles={['INSPECTOR']}>{children}</RoleRoute>;
+  return <RoleRoute fallbackPath="/inspector/login">{children}</RoleRoute>;
 }
 
 export function AdminRoute({ children }) {
-  return <RoleRoute roles={['ADMIN']}>{children}</RoleRoute>;
+  return <RoleRoute fallbackPath="/farmer/login">{children}</RoleRoute>;
 }
 
 export default RoleRoute;
