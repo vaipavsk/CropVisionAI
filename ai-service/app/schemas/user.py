@@ -25,6 +25,7 @@ class UserRegister(BaseModel):
     """Schema for a user registering via self-signup."""
 
     full_name: str = Field(..., max_length=150)
+    role: UserRole = Field(default=UserRole.FARMER)
 
 
 class UserUpdate(BaseModel):

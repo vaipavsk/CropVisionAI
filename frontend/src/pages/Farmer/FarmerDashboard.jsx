@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import useRole from '../../hooks/useRole';
 import {
   Sprout,
   Activity,
@@ -78,6 +79,7 @@ const initialClaims = [
 ];
 
 export default function FarmerDashboard({ initialTab }) {
+  const { roleUser } = useRole();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -490,11 +492,15 @@ export default function FarmerDashboard({ initialTab }) {
           <Card className="space-y-4">
             <div className="flex items-center gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
               <div className="h-16 w-16 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xl">
-                FP
+                {roleUser?.full_name ? roleUser.full_name.substring(0, 2).toUpperCase() : 'FP'}
               </div>
               <div>
-                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Farmer User</h3>
-                <p className="text-xs text-slate-400">Authenticated via Firebase Security Portal</p>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
+                  {roleUser?.full_name || 'Farmer User'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {roleUser?.email || 'Authenticated via Firebase Security Portal'}
+                </p>
               </div>
             </div>
             <div className="space-y-3 text-xs">

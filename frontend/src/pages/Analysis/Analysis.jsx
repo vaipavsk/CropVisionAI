@@ -1,20 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Upload, 
-  X, 
-  RefreshCw, 
-  AlertTriangle, 
-  CheckCircle, 
-  Brain, 
-  Sprout, 
-  ShieldAlert, 
-  Sparkles, 
-  ImageIcon, 
-  Play, 
-  FileText, 
-  Cpu, 
-  Activity, 
+import {
+  Upload,
+  X,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+  Brain,
+  Sprout,
+  ShieldAlert,
+  Sparkles,
+  ImageIcon,
+  Play,
+  FileText,
+  Cpu,
+  Activity,
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
@@ -41,12 +41,12 @@ export default function Analysis() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Pipeline processing state
   const [status, setStatus] = useState('idle'); // idle | processing | success | error
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [predictionData, setPredictionData] = useState(null);
-  
+
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const stageTimerRef = useRef(null);
@@ -99,7 +99,7 @@ export default function Analysis() {
 
         // Overlay transparent color gradient (representing AI attention heatmap)
         const gradientRadius = Math.min(img.width, img.height) * 0.35;
-        
+
         // Target random hot spots corresponding to detections or centered focus
         const centers = [
           { x: img.width * 0.5, y: img.height * 0.45, r: gradientRadius },
@@ -197,7 +197,7 @@ export default function Analysis() {
     try {
       // Stage 1: Uploading Specimen (index 0)
       const uploadRes = await uploadImage(file);
-      
+
       if (!uploadRes.success || !uploadRes.data?.upload_id) {
         throw new Error(uploadRes.message || 'Image upload failed.');
       }
@@ -216,7 +216,7 @@ export default function Analysis() {
 
       // Fast forward loading index to the end and show success
       setCurrentStageIndex(PIPELINE_STAGES.length - 1);
-      
+
       // Delay slightly for premium UX flow
       setTimeout(() => {
         setPredictionData(predictionRes.data);
@@ -284,8 +284,8 @@ export default function Analysis() {
                         onClick={() => fileInputRef.current?.click()}
                         className={`
                           border-2 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-300 min-h-[300px]
-                          ${dragActive 
-                            ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-neon-emerald' 
+                          ${dragActive
+                            ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-neon-emerald'
                             : 'border-slate-300 dark:border-white/10 hover:border-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-800/20'
                           }
                         `}
@@ -431,14 +431,14 @@ export default function Analysis() {
             className="w-full max-w-2xl mx-auto py-12"
           >
             <Card hoverable={false} className="bg-slate-900/80 border-emerald-500/25 p-8 text-center shadow-glass-glow relative overflow-hidden backdrop-blur-xl">
-              
+
               {/* Agricultural scanner grid effect */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-              
+
               {/* Pulse scan ring */}
               <div className="relative mb-8 flex justify-center">
                 <motion.div
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.3, 1],
                     opacity: [0.15, 0.35, 0.15]
                   }}
@@ -477,9 +477,9 @@ export default function Analysis() {
                 {PIPELINE_STAGES.map((stage, idx) => {
                   const isCompleted = idx < currentStageIndex;
                   const isActive = idx === currentStageIndex;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={stage.key}
                       className={`flex items-center gap-3 transition-opacity duration-300 ${isCompleted || isActive ? 'opacity-100' : 'opacity-35'}`}
                     >
@@ -552,7 +552,7 @@ export default function Analysis() {
           >
             {/* Top overview result card */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               {/* Image Compare View (Original Specimen and XAI GradCAM overlay) */}
               <div className="lg:col-span-2">
                 <Card hoverable={false} className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200 dark:border-white/5 shadow-xl p-6">
@@ -568,10 +568,10 @@ export default function Analysis() {
                         Original Crop Specimen
                       </span>
                       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 bg-slate-950/20 max-h-[300px] flex items-center justify-center p-2">
-                        <img 
-                          src={previewUrl} 
-                          alt="Original Specimen" 
-                          className="max-h-[260px] max-w-full rounded-lg object-contain" 
+                        <img
+                          src={previewUrl}
+                          alt="Original Specimen"
+                          className="max-h-[260px] max-w-full rounded-lg object-contain"
                         />
                       </div>
                     </div>
@@ -583,9 +583,9 @@ export default function Analysis() {
                       </span>
                       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 bg-slate-950/20 max-h-[300px] flex items-center justify-center p-2 relative">
                         {predictionData.gradcam_image_path ? (
-                          <img 
-                            src={getCleanGradcamUrl(predictionData.gradcam_image_path)} 
-                            alt="Grad-CAM Hotspot" 
+                          <img
+                            src={getCleanGradcamUrl(predictionData.gradcam_image_path)}
+                            alt="Grad-CAM Hotspot"
                             className="max-h-[260px] max-w-full rounded-lg object-contain"
                             onError={(e) => {
                               // If image fails to load (static file serve issue), fallback to canvas
@@ -595,11 +595,11 @@ export default function Analysis() {
                             }}
                           />
                         ) : null}
-                        
+
                         {/* Interactive local Canvas fallback render */}
-                        <canvas 
+                        <canvas
                           id="gradcam-canvas-overlay"
-                          ref={canvasRef} 
+                          ref={canvasRef}
                           className="max-h-[260px] max-w-full rounded-lg object-contain"
                           style={{ display: predictionData.gradcam_image_path ? 'none' : 'block' }}
                         />
@@ -647,15 +647,15 @@ export default function Analysis() {
                         <svg className="absolute inset-0 h-20 w-20 -rotate-90">
                           <circle cx="40" cy="40" r="32" stroke="rgba(16, 185, 129, 0.1)" strokeWidth="8" fill="none" />
                           <motion.circle
-                            cx="40" cy="40" r="32" 
+                            cx="40" cy="40" r="32"
                             stroke={predictionData.severity === 'Severe' ? '#ef4444' : predictionData.severity === 'Moderate' ? '#f59e0b' : '#10b981'}
-                            strokeWidth="8" 
+                            strokeWidth="8"
                             strokeDasharray={2 * Math.PI * 32}
                             initial={{ strokeDashoffset: 2 * Math.PI * 32 }}
                             animate={{ strokeDashoffset: 2 * Math.PI * 32 * (1 - predictionData.damage_percentage / 100) }}
                             transition={{ duration: 1.2, ease: 'easeOut' }}
                             strokeLinecap="round"
-                            fill="none" 
+                            fill="none"
                           />
                         </svg>
                         <span className="text-base font-extrabold text-slate-800 dark:text-white">
@@ -666,10 +666,9 @@ export default function Analysis() {
                         <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
                           Damage Severity
                         </span>
-                        <span className={`text-lg font-extrabold block uppercase tracking-wider ${
-                          predictionData.severity === 'Severe' ? 'text-red-500' :
-                          predictionData.severity === 'Moderate' ? 'text-amber-500' : 'text-emerald-500'
-                        }`}>
+                        <span className={`text-lg font-extrabold block uppercase tracking-wider ${predictionData.severity === 'Severe' ? 'text-red-500' :
+                            predictionData.severity === 'Moderate' ? 'text-amber-500' : 'text-emerald-500'
+                          }`}>
                           {predictionData.severity}
                         </span>
                         <span className="text-[11px] text-slate-400 block mt-0.5">
@@ -710,7 +709,7 @@ export default function Analysis() {
             {/* Insurance Decision / Underwriting Recommendations */}
             <Card hoverable={false} className="bg-gradient-to-r from-slate-900/90 to-slate-950/90 border border-emerald-500/20 shadow-neon-emerald/10 p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl" />
-              
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -721,11 +720,11 @@ export default function Analysis() {
                       Claim Recommendation Engine Payout Directive
                     </span>
                   </div>
-                  
+
                   <h4 className="text-lg font-bold text-white">
                     {predictionData.insurance_recommendation}
                   </h4>
-                  
+
                   <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
                     This analysis is generated autonomously by YOLO leaf inspection and EfficientNet classifiers. Decision scores are verified against MySQL claim standards.
                   </p>
@@ -735,9 +734,8 @@ export default function Analysis() {
                   <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                     Fraud Risk Index
                   </span>
-                  <span className={`text-xl font-black block ${
-                    predictionData.fraud_risk > 0.4 ? 'text-red-500' : 'text-emerald-500'
-                  }`}>
+                  <span className={`text-xl font-black block ${predictionData.fraud_risk > 0.4 ? 'text-red-500' : 'text-emerald-500'
+                    }`}>
                     {(predictionData.fraud_risk * 100).toFixed(1)}%
                   </span>
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mt-1">

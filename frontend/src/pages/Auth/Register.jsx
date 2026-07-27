@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
 import useAuth from '../../hooks/useAuth';
 import useRole from '../../hooks/useRole';
@@ -20,6 +20,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [role, setRole] = useState('FARMER');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,9 +82,13 @@ export default function Register() {
       }
 
       // 3. Synchronize user profile into MySQL database
-      await syncUserRegistration(fullName.trim());
+      await syncUserRegistration(fullName.trim(), role);
 
-      navigate('/farmer/dashboard');
+      if (role === 'INSPECTOR') {
+        navigate('/inspector/dashboard');
+      } else {
+        navigate('/farmer/dashboard');
+      }
     } catch (err) {
       console.error('Registration error:', err);
       // Firebase standard auth errors mapping
@@ -125,10 +130,10 @@ export default function Register() {
             <Sparkles size={22} className="animate-pulse" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300">
-            Create Farmer Account
+            Create {role === 'INSPECTOR' ? 'Inspector' : 'Farmer'} Account
           </h1>
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-500 dark:text-emerald-400 font-bold mt-1.5">
-            Farmer Registration
+            {role === 'INSPECTOR' ? 'Inspector' : 'Farmer'} Registration
           </p>
         </div>
 
@@ -149,6 +154,27 @@ export default function Register() {
               </motion.div>
             )}
 
+            <div className="space-y-1">
+              <label htmlFor="role" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Account Type
+              </label>
+              <div className="relative">
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3.5 rounded-xl border border-slate-200/80 bg-white/50 dark:border-white/10 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold transition cursor-pointer appearance-none"
+                >
+                  <option value="FARMER" className="dark:bg-slate-900">Farmer</option>
+                  <option value="INSPECTOR" className="dark:bg-slate-900">Insurance Inspector</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <Shield size={16} />
+                </div>
+              </div>
+            </div>
+
             <Input
               id="fullName"
               type="text"
@@ -164,8 +190,8 @@ export default function Register() {
             <Input
               id="email"
               type="email"
-              label="Farmer Email"
-              placeholder="farmer@example.com"
+              label={role === 'INSPECTOR' ? 'Inspector Email' : 'Farmer Email'}
+              placeholder={role === 'INSPECTOR' ? 'inspector@cropvision.ai' : 'farmer@example.com'}
               icon={Mail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}

@@ -46,10 +46,10 @@ export const RoleProvider = ({ children }) => {
     }
   }, [user, authLoading]);
 
-  const syncUserRegistration = async (fullName) => {
+  const syncUserRegistration = async (fullName, role = 'FARMER') => {
     try {
       setLoadingRole(true);
-      const response = await api.post('/users/register', { full_name: fullName });
+      const response = await api.post('/users/register', { full_name: fullName, role });
       if (response.data) {
         setRoleUser(response.data);
         setRole(response.data.role);

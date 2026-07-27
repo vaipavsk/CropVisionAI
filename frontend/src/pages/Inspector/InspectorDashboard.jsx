@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import useRole from '../../hooks/useRole';
 import {
   Shield,
   Check,
@@ -43,6 +44,7 @@ const initialInspectorClaims = [
 ];
 
 export default function InspectorDashboard({ initialTab }) {
+  const { roleUser } = useRole();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -421,11 +423,15 @@ export default function InspectorDashboard({ initialTab }) {
             <Card className="space-y-4 p-6">
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl">
-                  IP
+                  {roleUser?.full_name ? roleUser.full_name.substring(0, 2).toUpperCase() : 'IP'}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Inspector Clearance User</h3>
-                  <p className="text-xs text-slate-400">Official Underwriter Account</p>
+                  <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
+                    {roleUser?.full_name || 'Inspector Clearance User'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {roleUser?.email || 'Official Underwriter Account'}
+                  </p>
                 </div>
               </div>
             </Card>

@@ -62,17 +62,40 @@ def register_user(
             detail="Email address is already in use.",
         )
 
-    # Provision standard active FARMER
-    user_in = UserCreate(
-        firebase_uid=firebase_uid,
-        email=email,
-        full_name=user_reg.full_name,
-        role=UserRole.FARMER,
-        status=UserStatus.ACTIVE,
-    )
-    new_user = user_service.create_user(db, user_in)
-    logger.info(f"Successfully registered new FARMER user in MySQL: '{email}' (ID: {new_user.id})")
-    return new_user
+    # Provision standard active user with the chosen role
+    try:
+        user_in = UserCreate(
+            firebase_uid=firebase_uid,
+            email=email,
+            full_name=user_reg.full_name,
+            role=user_reg.role,
+            status=UserStatus.ACTIVE,
+        )
+        new_user = user_service.create_user(db, user_in)
+        logger.info(f"Successfully registered new {user_reg.role} user in MySQL: '{email}' (ID: {new_user.id})")
+        return new_user
+    except Exception as exc:
+        db.rollback()
+        logger.warning(f"Database write conflict during registration: {exc}")
+        
+        # Deduplication check: verify if registered in a concurrent thread
+        existing_user = user_service.get_user_by_firebase_uid(db, firebase_uid)
+        if existing_user:
+            logger.info(f"Resolved conflict: User with UID '{firebase_uid}' was registered concurrently.")
+            return existing_user
+        
+        # Double check email duplication
+        existing_email = user_service.get_user_by_email(db, email)
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email address is already in use.",
+            ) from exc
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration failed due to a database integrity constraint conflict.",
+        ) from exc
 
 
 @router.get("/me", response_model=UserResponse)
