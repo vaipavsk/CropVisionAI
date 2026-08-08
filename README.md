@@ -1,6 +1,6 @@
-Yes. If you mean **GitHub's “Add README” editor**, you can paste this entire block directly into the README editor:
 
-````markdown
+
+
 # 🌾 CropVisionAI
 
 ## XAI-Driven Crop Damage Assessment from Farmer-Captured Images for Automated Insurance Claim Verification
