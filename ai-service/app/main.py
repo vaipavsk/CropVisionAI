@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.routers import health_router, placeholder_router, prediction_router, upload_router, user_router
+from app.routers import claims_router, health_router, placeholder_router, prediction_router, upload_router, user_router
 
 
 def create_app() -> FastAPI:
@@ -32,6 +33,9 @@ def create_app() -> FastAPI:
     app.include_router(prediction_router)
     app.include_router(upload_router)
     app.include_router(user_router)
+    app.include_router(claims_router)
+    app.mount("/media/uploads", StaticFiles(directory=str(settings.upload_dir)), name="uploaded-images")
+    app.mount("/media/heatmaps", StaticFiles(directory=str(settings.report_dir / "heatmaps"), check_dir=False), name="gradcam-images")
 
     @app.get("/", tags=["health"])
     def root() -> dict[str, str]:

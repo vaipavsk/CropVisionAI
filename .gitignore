@@ -2,100 +2,78 @@
 # CropVisionAI - .gitignore
 # =====================================
 
-# ===========================
-# Python Virtual Environments
-# ===========================
+# Python virtual environments
 venv/
 venv312/
 .venv/
 env/
 
-# ===========================
-# Python Cache
-# ===========================
+# Python cache
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.so
 
-# ===========================
 # Pytest
-# ===========================
 .pytest_cache/
 .coverage
 htmlcov/
 
-# ===========================
-# Python Build
-# ===========================
+# Python build
 build/
 dist/
 *.egg-info/
 
-# ===========================
-# Environment Variables
-# ===========================
+# Environment variables
 .env
 *.env
+!.env.example
 
-# ===========================
-# Uploads & Generated Reports
-# ===========================
+# Firebase / service account credentials
+*-firebase-adminsdk-*.json
+**/*firebase-adminsdk*.json
+service-account*.json
+firebase-service-account*.json
+
+# Uploads & generated files
 uploads/
 reports/
-
 ai-service/app/uploads/
 ai-service/app/reports/
 
-# ===========================
-# React / Node
-# ===========================
+# Datasets
+datasets/
+
+# Node / React
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-node_modules/
-
-# ===========================
 # Logs
-# ===========================
 *.log
+npm-debug.log*
 
-# ===========================
 # IDE
-# ===========================
 .vscode/
 .idea/
 
-# ===========================
-# OS Files
-# ===========================
+# OS files
 .DS_Store
 Thumbs.db
 
-# ===========================
-# Git
-# ===========================
-.git/
-.gitignore
-
-# ===========================
-# Temporary Files
-# ===========================
+# Temporary files
 .cache/
 *.tmp
 *.bak
 
-# ===========================
-# Model Checkpoints (Optional)
-# Keep if you don't want to upload models
-# ===========================
+# Model checkpoints
+# Uncomment if trained models should NOT be committed:
 # trained_models/
 # *.pt
 # *.pth
 
-# ===========================
 # Jupyter
-# ===========================
 .ipynb_checkpoints/

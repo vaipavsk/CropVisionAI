@@ -72,10 +72,10 @@ const initialHistory = [
 
 // Mock Farmer Claims
 const initialClaims = [
-  { id: 'CLM-0194', crop: 'Rice', disease: 'Bacterial Blight', severity: '78%', requestedAmount: 25000, date: '2026-07-20', status: 'PENDING', recommendation: 'Eligible for 80% Payout' },
-  { id: 'CLM-0195', crop: 'Wheat', disease: 'Leaf Rust', severity: '42%', requestedAmount: 12000, date: '2026-07-19', status: 'PENDING', recommendation: 'Partial Claim Approved' },
-  { id: 'CLM-0196', crop: 'Corn', disease: 'Common Rust', severity: '15%', requestedAmount: 4500, date: '2026-07-15', status: 'APPROVED', recommendation: 'Minor Damage Coverage' },
-  { id: 'CLM-0197', crop: 'Potato', disease: 'Late Blight', severity: '92%', requestedAmount: 45000, date: '2026-07-10', status: 'APPROVED', recommendation: 'Full Payout Sanctioned' },
+  { id: 'CLM-0194', crop: 'Rice', disease: 'Bacterial Blight', severity: '78%', requestedAmount: 25000, date: '2026-07-20', status: 'PENDING', recommendation: 'Approve (High severity with strong AI confidence)' },
+  { id: 'CLM-0195', crop: 'Wheat', disease: 'Leaf Rust', severity: '42%', requestedAmount: 12000, date: '2026-07-19', status: 'PENDING', recommendation: 'Manual Review (Moderate damage requires inspector verification)' },
+  { id: 'CLM-0196', crop: 'Corn', disease: 'Common Rust', severity: '15%', requestedAmount: 4500, date: '2026-07-15', status: 'APPROVED', recommendation: 'Reject (Minimal visible damage detected)' },
+  { id: 'CLM-0197', crop: 'Potato', disease: 'Late Blight', severity: '92%', requestedAmount: 45000, date: '2026-07-10', status: 'APPROVED', recommendation: 'Approve (High severity with strong AI confidence)' },
 ];
 
 export default function FarmerDashboard({ initialTab }) {
@@ -448,7 +448,7 @@ export default function FarmerDashboard({ initialTab }) {
                     <th className="pb-3">Requested Amount</th>
                     <th className="pb-3">Date</th>
                     <th className="pb-3">Status</th>
-                    <th className="pb-3">AI Recommendation</th>
+                    <th className="pb-3">Insurance Recommendation</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -535,7 +535,7 @@ export default function FarmerDashboard({ initialTab }) {
           />
           <Input
             id="claimDisease"
-            label="Diagnosed Disease / Issue"
+            label="Detected Issue"
             value={newClaimDisease}
             onChange={(e) => setNewClaimDisease(e.target.value)}
             placeholder="e.g. Bacterial Blight, Late Blight"

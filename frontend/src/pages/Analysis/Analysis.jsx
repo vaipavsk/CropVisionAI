@@ -626,11 +626,16 @@ export default function Analysis() {
                       {/* Diagnostic Class Pill */}
                       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-white/5 mb-4 text-center">
                         <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-                          Health Categorisation
+                          Detected Issue
                         </span>
                         <span className="text-lg font-black text-slate-800 dark:text-white block">
                           {predictionData.classification}
                         </span>
+                        {predictionData.category && (
+                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mt-1">
+                            Category: {predictionData.category}
+                          </span>
+                        )}
                         <div className="flex items-center justify-center gap-1.5 mt-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-xs text-emerald-500 font-bold">
@@ -672,7 +677,7 @@ export default function Analysis() {
                           {predictionData.severity}
                         </span>
                         <span className="text-[11px] text-slate-400 block mt-0.5">
-                          Calculated score: {predictionData.severity_score.toFixed(2)}
+                          Risk Level: <strong className={predictionData.risk_level === 'High' ? 'text-red-500' : predictionData.risk_level === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}>{predictionData.risk_level || 'Low'}</strong>
                         </span>
                       </div>
                     </div>
@@ -717,13 +722,19 @@ export default function Analysis() {
                       <ShieldCheck size={14} />
                     </div>
                     <span className="text-xs uppercase tracking-widest text-emerald-400 font-extrabold">
-                      Claim Recommendation Engine Payout Directive
+                      Insurance Recommendation
                     </span>
                   </div>
 
                   <h4 className="text-lg font-bold text-white">
                     {predictionData.insurance_recommendation}
                   </h4>
+
+                  {predictionData.recommendation_reason && (
+                    <p className="text-xs font-semibold text-emerald-400">
+                      Reason: {predictionData.recommendation_reason}
+                    </p>
+                  )}
 
                   <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
                     This analysis is generated autonomously by YOLO leaf inspection and EfficientNet classifiers. Decision scores are verified against MySQL claim standards.

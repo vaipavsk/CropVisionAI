@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Shield, Sparkles, AlertCircle } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
@@ -8,11 +9,12 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/common/Button';
 
 export default function CompleteProfile() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { syncUserRegistration } = useRole();
   
   const [fullName, setFullName] = useState(user?.displayName || '');
-  const [role, setRole] = useState('FARMER');
+  const [role, setRole] = useState(() => localStorage.getItem('registration_role') || 'FARMER');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,8 +29,13 @@ export default function CompleteProfile() {
 
     setIsLoading(true);
     try {
-      await syncUserRegistration(fullName.trim(), role);
-      // Once synchronized, RoleContext will update, rendering the actual page automatically!
+      const profile = await syncUserRegistration(fullName.trim(), role);
+      localStorage.removeItem('registration_role');
+      if (profile && profile.role === 'INSPECTOR') {
+        navigate('/inspector/dashboard');
+      } else {
+        navigate('/farmer/dashboard');
+      }
     } catch (err) {
       console.error('Profile completion sync error:', err);
       if (err.response?.data?.detail) {

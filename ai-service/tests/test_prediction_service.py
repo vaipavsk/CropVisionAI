@@ -37,8 +37,8 @@ class TestPredictionService(unittest.TestCase):
         self.gradcam_mock = {"heatmap_path": "/path/to/gradcam_heatmap.jpg", "predicted_class": 2, "confidence": 0.85}
         self.severity_mock = {"damage_percentage": 35.0, "severity": "Moderate", "risk_score": 4.5, "recommendation_score": 3}
         self.recommendation_mock = RecommendationResult(
-            recommendation="Refer to Manual Adjuster Review",
-            decision="MANUAL_REVIEW",
+            recommendation="Manual Review",
+            decision="Manual Review",
             confidence=0.85,
             fraud_risk=0.0,
             requires_manual_review=True,
@@ -97,7 +97,7 @@ class TestPredictionService(unittest.TestCase):
         self.assertEqual(result.severity, "Moderate")
         self.assertEqual(result.severity_score, 4.5)
         self.assertEqual(result.gradcam_image_path, "/path/to/gradcam_heatmap.jpg")
-        self.assertEqual(result.insurance_recommendation, "MANUAL_REVIEW")
+        self.assertEqual(result.insurance_recommendation, "Manual Review")
         self.assertEqual(result.fraud_risk, 0.0)
         self.assertEqual(result.pipeline_status, "COMPLETED")
         self.assertGreater(result.processing_time_ms, 0.0)

@@ -1,16 +1,23 @@
-# Dependencies and build output
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 .vite/
 
-# Lockfiles and logs
-package-lock.json
-npm-debug.log*
+# Environment variables
+.env
+*.env
+!.env.example
 
-# Python
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Python cache
 __pycache__/
 *.pyc
-.venv/
 
 # VS Code
 .vscode/

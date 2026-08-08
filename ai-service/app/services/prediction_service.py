@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import logging
 import time
+import json
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
+from app.models.claim import Claim, ClaimStatus
+from app.models.prediction import Prediction, PredictionStatus
 from app.models.upload import Upload
 from app.services.base_service import BaseService
 from app.services.prediction_models import PredictionResult
@@ -18,6 +21,44 @@ from app.ai.severity import SeverityAnalyzer
 from app.ai.recommendation import RecommendationEngine
 
 logger = logging.getLogger(__name__)
+
+
+def categorize_issue(issue_name: str) -> str:
+    name_lower = issue_name.strip().lower()
+    
+    # Check for Insect Pest Damage
+    pest_keywords = [
+        "hispa", "insect", "pest", "caterpillar", "aphid", "mite", "worm", 
+        "borer", "beetle", "locust", "bug", "armyworm", "cutworm", "weevil", "thrip"
+    ]
+    if any(keyword in name_lower for keyword in pest_keywords):
+        return "Insect Pest Damage"
+        
+    # Check for Bacterial Disease
+    bacterial_keywords = ["bacterial", "canker", "scab (bacterial)"]
+    if any(keyword in name_lower for keyword in bacterial_keywords):
+        return "Bacterial Disease"
+        
+    # Check for Viral Disease
+    viral_keywords = ["viral", "virus", "mosaic", "curl"]
+    if any(keyword in name_lower for keyword in viral_keywords):
+        return "Viral Disease"
+        
+    # Check for Nutrient Deficiency
+    nutrient_keywords = ["deficiency", "nutrient", "chlorosis", "nitrogen", "potassium", "phosphorus"]
+    if any(keyword in name_lower for keyword in nutrient_keywords):
+        return "Nutrient Deficiency"
+        
+    # Check for Fungal Disease
+    fungal_keywords = [
+        "fungal", "blast", "rust", "blight", "septoria", "mildew", 
+        "anthracnose", "scab", "spot", "smut", "rot", "mold"
+    ]
+    if any(keyword in name_lower for keyword in fungal_keywords):
+        return "Fungal Disease"
+        
+    return "Unknown"
+
 
 
 class PredictionServiceError(Exception):
@@ -167,20 +208,96 @@ class PredictionService(BaseService):
         processing_time_ms = (end_time - start_time) * 1000.0
         logger.info(f"Pipeline completed successfully in {processing_time_ms:.2f} ms.")
 
-        return PredictionResult(
+        # Compute category and risk level
+        category = categorize_issue(classification_result["class_name"])
+        damage_pct = severity_result["damage_percentage"]
+        if damage_pct > 70.0:
+            risk_lvl = "High"
+        elif 40.0 <= damage_pct <= 70.0:
+            risk_lvl = "Medium"
+        else:
+            risk_lvl = "Low"
+
+        result = PredictionResult(
             upload_id=upload_id,
             image_path=image_path,
             preprocessing_status=preprocessing_status,
             detections=detections,
             classification=classification_result["class_name"],
             classification_confidence=classification_result["confidence"],
-            damage_percentage=severity_result["damage_percentage"],
+            damage_percentage=damage_pct,
             severity=severity_result["severity"],
             severity_score=severity_result["risk_score"],
             gradcam_image_path=gradcam_image_path,
             insurance_recommendation=rec_result.decision,
             fraud_risk=rec_result.fraud_risk,
+            category=category,
+            risk_level=risk_lvl,
+            recommendation_reason=rec_result.reason,
             processing_time_ms=processing_time_ms,
             timestamp=datetime.now(timezone.utc),
             pipeline_status="COMPLETED",
         )
+        self._persist_prediction_and_claim(upload, result)
+        return result
+
+    def _persist_prediction_and_claim(self, upload: Upload, result: PredictionResult) -> None:
+        """Persist inference output without allowing an optional claim failure to fail AI inference."""
+        metadata = {
+            "severity": result.severity,
+            "severity_score": result.severity_score,
+            "damage_percentage": result.damage_percentage,
+            "recommendation": result.insurance_recommendation,
+            "gradcam_image_path": result.gradcam_image_path,
+            "timestamp": result.timestamp.isoformat(),
+            "category": result.category,
+            "risk_level": result.risk_level,
+            "recommendation_reason": result.recommendation_reason,
+            "detections_count": len(result.detections),
+        }
+        try:
+            prediction = self.db.query(Prediction).filter(Prediction.upload_id == upload.id).first()
+            if prediction is None:
+                prediction = Prediction(
+                    upload_id=upload.id,
+                    model_name="YOLOv8 + EfficientNet-B0",
+                    confidence_score=result.classification_confidence,
+                    damage_class=result.classification,
+                    explanation=json.dumps(metadata),
+                    status=PredictionStatus.COMPLETED,
+                )
+                self.db.add(prediction)
+            else:
+                prediction.model_name = "YOLOv8 + EfficientNet-B0"
+                prediction.confidence_score = result.classification_confidence
+                prediction.damage_class = result.classification
+                prediction.explanation = json.dumps(metadata)
+                prediction.status = PredictionStatus.COMPLETED
+
+            self.db.commit()
+            self.db.refresh(prediction)
+            logger.info("Prediction persisted: prediction_id=%s upload_id=%s", prediction.id, upload.id)
+        except Exception as exc:
+            self.db.rollback()
+            logger.exception("Prediction persistence failed for upload_id=%s", upload.id)
+            raise PredictionServiceError("Prediction persistence failed.") from exc
+
+        try:
+            claim = self.db.query(Claim).filter(Claim.prediction_id == prediction.id).first()
+            if claim is None:
+                claim = Claim(
+                    prediction_id=prediction.id,
+                    claim_number=f"CLM-{prediction.id:06d}",
+                    status=ClaimStatus.DRAFT,
+                )
+                self.db.add(claim)
+                self.db.commit()
+                self.db.refresh(claim)
+                logger.info("Claim created: claim_id=%s prediction_id=%s upload_id=%s", claim.id, prediction.id, upload.id)
+            else:
+                logger.info("Claim already exists: claim_id=%s prediction_id=%s", claim.id, prediction.id)
+        except Exception:
+            # The prediction commit above has already completed. Claim failures must never
+            # turn a completed farmer inference into an interrupted pipeline response.
+            self.db.rollback()
+            logger.exception("Claim creation failed for prediction_id=%s; prediction remains saved", prediction.id)

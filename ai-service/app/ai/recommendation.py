@@ -15,7 +15,7 @@ class RecommendationEngine:
     automated insurance claim decisions (Approve, Reject, or Manual Review).
     """
 
-    def __init__(self, high_confidence_threshold: float = 0.80) -> None:
+    def __init__(self, high_confidence_threshold: float = 0.90) -> None:
         """Initialize the RecommendationEngine with configurable thresholds.
 
         Args:
@@ -125,37 +125,22 @@ class RecommendationEngine:
         # 2. Decision Logic Rules (applied in order)
         classification_lower = classification.strip().lower()
 
-        # Rule 1: No detections
-        if obj_count == 0:
-            decision = "REJECT"
-            reason = "Claim rejected: no crop objects were detected in the farmer-captured image."
-        # Rule 2: Low confidence
-        elif classification_confidence < 0.60:
-            decision = "MANUAL_REVIEW"
-            reason = f"Claim flagged for manual review: classification confidence ({classification_confidence:.2f}) is below the required 0.60 threshold."
-        # Rule 3: Unknown classification
-        elif not classification_lower or "unknown" in classification_lower:
-            decision = "MANUAL_REVIEW"
-            reason = f"Claim flagged for manual review: the crop classification or disease type is unknown ('{classification}')."
-        # Rule 4: High severity and high confidence
-        elif severity_lower in ("severe", "high") and classification_confidence >= self.high_confidence_threshold:
-            decision = "APPROVE"
-            reason = f"Claim approved automatically: high crop damage severity ('{severity_level}') confirmed with high classification confidence ({classification_confidence:.2f})."
-        # Rule 5: Moderate severity
-        elif severity_lower == "moderate":
-            decision = "MANUAL_REVIEW"
-            reason = "Claim flagged for manual review: crop damage severity is moderate, requiring adjuster evaluation."
-        # Rule 6: Low severity
-        elif severity_lower == "low":
-            decision = "REJECT"
-            reason = f"Claim rejected: crop damage severity is low, which does not meet the payout threshold."
-        # Fallback (e.g. Severe severity with confidence >= 0.60 but < high_confidence_threshold)
+        if damage_percentage < 40.0:
+            decision = "Reject"
+            reason = "Minimal visible damage detected."
+        elif 40.0 <= damage_percentage <= 70.0:
+            decision = "Manual Review"
+            reason = "Moderate damage requires inspector verification."
         else:
-            decision = "MANUAL_REVIEW"
-            reason = f"Claim flagged for manual review: crop damage severity is '{severity_level}' but classification confidence ({classification_confidence:.2f}) is insufficient for automatic approval."
+            if classification_confidence > self.high_confidence_threshold:
+                decision = "Approve"
+                reason = "High severity with strong AI confidence."
+            else:
+                decision = "Manual Review"
+                reason = "High severity but insufficient AI confidence; requires manual review."
 
         # 3. Compute Recommendation confidence and fraud risk
-        if decision == "REJECT" and obj_count == 0:
+        if decision == "Reject" and obj_count == 0:
             recommendation_confidence = 1.0
         else:
             recommendation_confidence = float(round(classification_confidence, 4))
@@ -179,14 +164,9 @@ class RecommendationEngine:
                 fraud_risk = 0.65
 
         # Format recommendation text
-        if decision == "APPROVE":
-            recommendation_text = "Approved for Automated Claim Payout"
-        elif decision == "REJECT":
-            recommendation_text = "Rejected Claim"
-        else:
-            recommendation_text = "Refer to Manual Adjuster Review"
+        recommendation_text = decision
 
-        requires_manual_review = (decision == "MANUAL_REVIEW")
+        requires_manual_review = (decision == "Manual Review")
 
         logger.info(
             f"Recommendation decision: decision={decision}, confidence={recommendation_confidence:.4f}, "

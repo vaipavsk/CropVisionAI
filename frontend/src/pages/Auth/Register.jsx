@@ -71,6 +71,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
+      localStorage.setItem('registration_role', role);
       // 1. Firebase auth register
       const userCredential = await register(email, password);
       

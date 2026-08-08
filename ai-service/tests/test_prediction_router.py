@@ -15,6 +15,8 @@ from app.database.session import get_db
 from app.main import app
 from app.services.prediction_models import PredictionResult
 from app.services.prediction_service import PredictionServiceError
+from app.routers.prediction import get_farmer_user
+from app.models.user import User, UserRole
 
 
 class TestPredictionRouter(unittest.TestCase):
@@ -23,8 +25,11 @@ class TestPredictionRouter(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
         self.db_mock = MagicMock()
-        # Override the db session dependency injection
+        # Override dependencies
         app.dependency_overrides[get_db] = lambda: self.db_mock
+        app.dependency_overrides[get_farmer_user.dependency] = lambda: MagicMock(spec=User, id=123, role=UserRole.FARMER)
+
+
 
     def tearDown(self) -> None:
         app.dependency_overrides.clear()
@@ -45,8 +50,11 @@ class TestPredictionRouter(unittest.TestCase):
             severity="Moderate",
             severity_score=4.5,
             gradcam_image_path="/path/to/gradcam_heatmap.jpg",
-            insurance_recommendation="MANUAL_REVIEW",
+            insurance_recommendation="Manual Review",
             fraud_risk=0.0,
+            category="Fungal Disease",
+            risk_level="Medium",
+            recommendation_reason="Moderate damage requires inspector verification.",
             processing_time_ms=120.5,
             pipeline_status="COMPLETED",
         )
@@ -69,7 +77,7 @@ class TestPredictionRouter(unittest.TestCase):
         self.assertEqual(data_payload["upload_id"], 123)
         self.assertEqual(data_payload["classification"], "Leaf Rust")
         self.assertEqual(data_payload["severity"], "Moderate")
-        self.assertEqual(data_payload["insurance_recommendation"], "MANUAL_REVIEW")
+        self.assertEqual(data_payload["insurance_recommendation"], "Manual Review")
         
         mock_service.predict.assert_called_once_with(123)
 

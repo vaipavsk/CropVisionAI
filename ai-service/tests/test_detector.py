@@ -12,8 +12,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.ai import (
     DetectorImageNotFoundError,
-    InferenceError,
-    ModelLoadError,
+    DetectorInferenceError as InferenceError,
+    DetectorModelLoadError as ModelLoadError,
     YOLODetector,
 )
 

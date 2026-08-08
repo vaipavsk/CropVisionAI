@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 class ClaimStatus(str, Enum):
     """Supported claim states."""
 
-    DRAFT = "draft"
-    SUBMITTED = "submitted"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class Claim(Base):
