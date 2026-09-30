@@ -35,6 +35,9 @@ class InferenceError(DetectorError):
     pass
 
 
+_cached_yolo_model = None
+
+
 class YOLODetector:
     """Handles object detection on crop images using a pretrained YOLOv8 model."""
 
@@ -48,6 +51,8 @@ class YOLODetector:
         Raises:
             ModelLoadError: If the model path does not exist or the model fails to load.
         """
+        global _cached_yolo_model
+
         if YOLO is None:
             logger.error("Ultralytics library is not installed.")
             raise ModelLoadError("Ultralytics library is not installed. Please check your dependencies.")
@@ -55,8 +60,14 @@ class YOLODetector:
         if model_path is None:
             settings = get_settings()
             self.model_path = settings.yolo_model_absolute_path
+            self.confidence_threshold = settings.yolo_confidence_threshold
         else:
             self.model_path = Path(model_path)
+            self.confidence_threshold = 0.25
+
+        if _cached_yolo_model is not None and model_path is None:
+            self.model = _cached_yolo_model
+            return
 
         if not self.model_path.exists():
             logger.error(f"YOLO model file does not exist at: {self.model_path}")
@@ -65,6 +76,8 @@ class YOLODetector:
         try:
             logger.info(f"Loading YOLO model from: {self.model_path}")
             self.model = YOLO(str(self.model_path))
+            if model_path is None:
+                _cached_yolo_model = self.model
         except Exception as exc:
             logger.exception(f"Failed to load YOLO model from: {self.model_path}")
             raise ModelLoadError(f"Failed to initialize YOLO model from {self.model_path}") from exc
@@ -99,7 +112,7 @@ class YOLODetector:
         try:
             logger.info(f"Running YOLO inference on image: {path.name}")
             # Run inference. verbose=False disables verbose console print from ultralytics
-            results = self.model(str(path), verbose=False)
+            results = self.model(str(path), conf=self.confidence_threshold, verbose=False)
         except Exception as exc:
             logger.exception(f"YOLO inference failed on: {path.name}")
             raise InferenceError(f"Failed to run YOLO inference on {path.name}") from exc

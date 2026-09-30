@@ -29,6 +29,14 @@ from app.ai.severity import (
     SeverityAnalyzer,
     SeverityError,
 )
+from app.ai.segmentation import (
+    ConvBlock,
+    PlantSegmentationModel,
+    SegmentationError,
+    SegmentationInferenceError,
+    SegmentationModelLoadError,
+    SmallUNet,
+)
 
 __all__ = [
     "ImagePreprocessor",
@@ -50,4 +58,10 @@ __all__ = [
     "SeverityAnalyzer",
     "SeverityError",
     "InvalidSeverityInputError",
+    "SmallUNet",
+    "ConvBlock",
+    "PlantSegmentationModel",
+    "SegmentationError",
+    "SegmentationModelLoadError",
+    "SegmentationInferenceError",
 ]

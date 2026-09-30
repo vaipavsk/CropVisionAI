@@ -10,7 +10,7 @@ if (!API_BASE_URL) {
 }
 
 export const api = axios.create({
-  baseURL: API_BASE_URL || 'http://localhost:8000',
+  baseURL: API_BASE_URL || 'http://localhost:8001',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -71,8 +71,21 @@ export const handleApiError = (error) => {
   
   if (error.response) {
     // Backend returned an error response
-    errorMessage = error.response.data?.message || 
-                   error.response.data?.detail || 
+    const detail = error.response.data?.detail;
+    const validationMessage = Array.isArray(detail)
+      ? detail
+          .map((item) => {
+            if (typeof item === 'string') return item;
+            const field = Array.isArray(item?.loc) ? item.loc.at(-1) : null;
+            return field && item?.msg ? `${field}: ${item.msg}` : item?.msg;
+          })
+          .filter(Boolean)
+          .join('; ')
+      : null;
+
+    errorMessage = error.response.data?.message ||
+                   validationMessage ||
+                   (typeof detail === 'string' ? detail : null) ||
                    (typeof error.response.data === 'string' ? error.response.data : null) ||
                    `Request failed with status ${error.response.status}`;
   } else if (error.request) {

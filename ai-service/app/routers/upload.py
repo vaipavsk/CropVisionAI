@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user
+from app.dependencies.rate_limiter import upload_rate_limiter
 from app.models.user import User, UserRole
 from app.security.roles import RoleChecker
 from app.schemas.upload import UploadResponse
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 get_farmer_user = Depends(RoleChecker([UserRole.FARMER]))
 
 
-@router.post("", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UploadResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(upload_rate_limiter)])
 def upload_image(
     image: Annotated[UploadFile, File(...)],
     db: Annotated[Session, Depends(get_db)],

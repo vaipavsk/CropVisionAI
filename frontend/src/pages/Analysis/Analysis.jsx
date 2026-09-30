@@ -20,16 +20,28 @@ import {
 } from 'lucide-react';
 import { uploadImage } from '../../services/uploadApi';
 import { predict } from '../../services/predictionApi';
+import { AI_API_BASE_URL } from '../../services/aiApi';
+import { getMyClaims } from '../../services/claimApi';
+import { findClaimForUpload } from '../../utils/claimStatus';
 import Card from '../../components/ui/Card';
 import Button from '../../components/common/Button';
+import AuthorizedImage from '../../components/common/AuthorizedImage';
+import InsuranceClaimReport from '../../components/analysis/InsuranceClaimReport';
+import ConfidenceAndImageQuality, { ImageInputChecks } from '../../components/analysis/ConfidenceAndImageQuality';
+import ClaimStatusPanel from '../../components/analysis/ClaimStatusPanel';
+import FinancialStatus from '../../components/farmer/FinancialStatus';
+import ClaimEvidenceChecklist from '../../components/claims/ClaimEvidenceChecklist';
+import ClaimTimeline from '../../components/claims/ClaimTimeline';
+import DiseaseTreatmentGuidance from '../../components/claims/DiseaseTreatmentGuidance';
+import FinancialStatusSettlement from '../../components/claims/FinancialStatusSettlement';
 
 // Configuration constants
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const ALLOWED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const ALLOWED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png'];
 
 const PIPELINE_STAGES = [
   { key: 'upload', label: 'Uploading Specimen to Secure Gateway' },
-  { key: 'yolo', label: 'YOLOv8 Leaf & Injury Spotting' },
+  { key: 'yolo', label: 'YOLOv8 Generic Object Context (COCO)' },
   { key: 'efficientnet', label: 'EfficientNet Crop Disease Classifier' },
   { key: 'gradcam', label: 'Grad-CAM XAI Heatmap Synthesis' },
   { key: 'severity', label: 'Damage Severity & Risk Analysis' },
@@ -46,10 +58,14 @@ export default function Analysis() {
   const [status, setStatus] = useState('idle'); // idle | processing | success | error
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [predictionData, setPredictionData] = useState(null);
+  const [gradcamImageState, setGradcamImageState] = useState('idle');
+  const [originalImageFailed, setOriginalImageFailed] = useState(false);
+  const [imageInspection, setImageInspection] = useState({ readable: null, width: null, height: null, fileSizeBytes: null });
+  const [claimLookup, setClaimLookup] = useState({ state: 'idle', claim: null });
 
   const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
   const stageTimerRef = useRef(null);
+  const imageInspectionIdRef = useRef(0);
 
   // Clean up object URL when component unmounts or file changes
   useEffect(() => {
@@ -85,46 +101,29 @@ export default function Analysis() {
     };
   }, [status]);
 
-  // Canvas Heatmap Fallback Generator
   useEffect(() => {
-    if (status === 'success' && canvasRef.current && previewUrl) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.src = previewUrl;
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+    if (status !== 'success' || !predictionData?.upload_id) return undefined;
 
-        // Overlay transparent color gradient (representing AI attention heatmap)
-        const gradientRadius = Math.min(img.width, img.height) * 0.35;
+    let active = true;
+    const uploadId = predictionData.upload_id;
+    setClaimLookup({ state: 'loading', claim: null });
 
-        // Target random hot spots corresponding to detections or centered focus
-        const centers = [
-          { x: img.width * 0.5, y: img.height * 0.45, r: gradientRadius },
-          { x: img.width * 0.35, y: img.height * 0.6, r: gradientRadius * 0.6 },
-          { x: img.width * 0.65, y: img.height * 0.35, r: gradientRadius * 0.7 }
-        ];
+    getMyClaims()
+      .then((claims) => {
+        if (!active) return;
+        const matchingClaim = findClaimForUpload(claims, uploadId);
+        setClaimLookup(matchingClaim ? { state: 'loaded', claim: matchingClaim } : { state: 'empty', claim: null });
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        const statusCode = requestError?.response?.status;
+        setClaimLookup({ state: statusCode === 401 || statusCode === 403 ? 'unauthorized' : 'error', claim: null });
+      });
 
-        ctx.globalCompositeOperation = 'multiply';
-
-        centers.forEach(({ x, y, r }) => {
-          const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-          grad.addColorStop(0, 'rgba(239, 68, 68, 0.8)'); // Red hotspot
-          grad.addColorStop(0.3, 'rgba(245, 158, 11, 0.6)'); // Orange warm zone
-          grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.3)'); // Green boundary
-          grad.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent outside
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, 2 * Math.PI);
-          ctx.fill();
-        });
-
-        ctx.globalCompositeOperation = 'source-over';
-      };
-    }
-  }, [status, predictionData, previewUrl]);
+    return () => {
+      active = false;
+    };
+  }, [status, predictionData?.upload_id]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -141,7 +140,7 @@ export default function Analysis() {
     if (!selectedFile) return false;
 
     if (!ALLOWED_FORMATS.includes(selectedFile.type)) {
-      setError('Unsupported file type. Please upload a JPG, JPEG, PNG, or WEBP image.');
+      setError('Unsupported file type. Please upload a JPG, JPEG, or PNG image.');
       return false;
     }
 
@@ -153,46 +152,82 @@ export default function Analysis() {
     return true;
   };
 
+  const inspectImageInput = (selectedFile) => {
+    const inspectionId = ++imageInspectionIdRef.current;
+    setImageInspection({ readable: null, width: null, height: null, fileSizeBytes: selectedFile.size });
+
+    const metadataUrl = URL.createObjectURL(selectedFile);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(metadataUrl);
+      if (inspectionId !== imageInspectionIdRef.current) return;
+      setImageInspection({
+        readable: true,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        fileSizeBytes: selectedFile.size,
+      });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(metadataUrl);
+      if (inspectionId !== imageInspectionIdRef.current) return;
+      setImageInspection({ readable: false, width: null, height: null, fileSizeBytes: selectedFile.size });
+    };
+    image.src = metadataUrl;
+  };
+
+  const selectFile = (selectedFile) => {
+    if (!validateFile(selectedFile)) return;
+    setFile(selectedFile);
+    setPreviewUrl(URL.createObjectURL(selectedFile));
+    setOriginalImageFailed(false);
+    inspectImageInput(selectedFile);
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selectedFile = e.dataTransfer.files[0];
-      if (validateFile(selectedFile)) {
-        setFile(selectedFile);
-        setPreviewUrl(URL.createObjectURL(selectedFile));
-      }
+      selectFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      if (validateFile(selectedFile)) {
-        setFile(selectedFile);
-        setPreviewUrl(URL.createObjectURL(selectedFile));
-      }
+      selectFile(e.target.files[0]);
     }
   };
 
   const removeFile = () => {
+    imageInspectionIdRef.current += 1;
     setFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setError('');
     setStatus('idle');
     setPredictionData(null);
+    setGradcamImageState('idle');
+    setOriginalImageFailed(false);
+    setImageInspection({ readable: null, width: null, height: null, fileSizeBytes: null });
+    setClaimLookup({ state: 'idle', claim: null });
     setCurrentStageIndex(0);
   };
 
   const startAnalysis = async () => {
     if (!file) return;
+    if (imageInspection.readable !== true) {
+      setError(imageInspection.readable === false
+        ? 'The selected image could not be decoded in this browser. Please choose another JPG or PNG file.'
+        : 'Image metadata is still loading. Please wait a moment and try again.');
+      return;
+    }
 
     setStatus('processing');
     setCurrentStageIndex(0);
     setError('');
+    setClaimLookup({ state: 'idle', claim: null });
 
     try {
       // Stage 1: Uploading Specimen (index 0)
@@ -216,6 +251,7 @@ export default function Analysis() {
 
       // Fast forward loading index to the end and show success
       setCurrentStageIndex(PIPELINE_STAGES.length - 1);
+      setGradcamImageState(predictionRes.data.gradcam_image_path ? 'loading' : 'unavailable');
 
       // Delay slightly for premium UX flow
       setTimeout(() => {
@@ -229,12 +265,30 @@ export default function Analysis() {
     }
   };
 
-  const getCleanGradcamUrl = (path) => {
+  const getGradcamImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const clean = path.replace(/^(app\/|backend\/)/, '');
-    const apiHost = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    return `${apiHost}/${clean}`;
+    if (path.startsWith('/media/heatmaps/')) return `${AI_API_BASE_URL}${path}`;
+    const filename = path.split(/[\\/]/).pop();
+    return filename ? `${AI_API_BASE_URL}/media/heatmaps/${encodeURIComponent(filename)}` : null;
+  };
+
+  const formatPercent = (value, digits = 1) => (
+    typeof value === 'number' && Number.isFinite(value) ? `${(value * 100).toFixed(digits)}%` : 'Not available'
+  );
+
+  const formatDamage = (value) => (
+    typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(0)}%` : 'Not measured'
+  );
+
+  const formatMilliseconds = (value) => (
+    typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(0)} ms` : 'Not available'
+  );
+
+  const formatTimestamp = (value) => {
+    if (!value) return 'Not available';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Not available' : date.toLocaleString();
   };
 
   return (
@@ -245,7 +299,7 @@ export default function Analysis() {
           Crop Analysis Workspace
         </h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-          Upload specimen photos for YOLO leaf scanning, EfficientNet health classifications, and Grad-CAM explainability heatmaps.
+          Upload crop images for EfficientNet disease classification and Grad-CAM explainability heatmaps.
         </p>
       </div>
 
@@ -277,6 +331,10 @@ export default function Analysis() {
                     {/* Drag and Drop Container */}
                     {!previewUrl ? (
                       <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Upload crop specimen image by clicking or dragging a file here"
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
                         onDragEnter={handleDrag}
                         onDragOver={handleDrag}
                         onDragLeave={handleDrag}
@@ -293,8 +351,9 @@ export default function Analysis() {
                         <input
                           ref={fileInputRef}
                           type="file"
-                          accept=".jpg,.jpeg,.png,.webp"
+                          accept=".jpg,.jpeg,.png"
                           className="hidden"
+                          aria-label="Upload crop image file"
                           onChange={handleFileChange}
                         />
                         <div className="h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 border border-emerald-500/25 shadow-glass-glow animate-pulse">
@@ -306,14 +365,12 @@ export default function Analysis() {
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
                           Or <span className="text-emerald-500 font-bold underline">browse local directory</span>
                         </p>
-                        <div className="flex gap-3 justify-center mt-6 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                        <div className="flex gap-3 justify-center mt-6 text-xs uppercase tracking-wider text-slate-400 font-bold">
                           <span>PNG</span>
                           <span>•</span>
                           <span>JPG</span>
                           <span>•</span>
                           <span>JPEG</span>
-                          <span>•</span>
-                          <span>WEBP</span>
                           <span>•</span>
                           <span>MAX 10MB</span>
                         </div>
@@ -325,15 +382,22 @@ export default function Analysis() {
                           src={previewUrl}
                           alt="Specimen preview"
                           className="max-w-full max-h-[320px] rounded-xl object-contain shadow-glass"
+                          onError={() => {
+                            setOriginalImageFailed(true);
+                            setImageInspection((current) => ({ ...current, readable: false, width: null, height: null }));
+                          }}
                         />
                         <button
                           onClick={removeFile}
+                          aria-label="Remove selected image"
                           className="absolute top-4 right-4 h-8 w-8 rounded-full bg-slate-900/80 hover:bg-red-500 text-white flex items-center justify-center transition cursor-pointer"
                         >
-                          <X size={16} />
+                          <X size={16} aria-hidden="true" />
                         </button>
                       </div>
                     )}
+
+                    {previewUrl && <ImageInputChecks inspection={imageInspection} />}
                   </div>
 
                   {previewUrl && (
@@ -349,7 +413,7 @@ export default function Analysis() {
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".jpg,.jpeg,.png,.webp"
+                        accept=".jpg,.jpeg,.png"
                         className="hidden"
                         onChange={handleFileChange}
                       />
@@ -381,7 +445,7 @@ export default function Analysis() {
                         1
                       </div>
                       <p>
-                        <strong>YOLOv8 leaf detector</strong> locates healthy leaf tissue and identifies localized damage hot spots in real-time.
+                        <strong>YOLOv8 context model</strong> may return generic COCO objects. These are not crop-damage or lesion detections.
                       </p>
                     </div>
                     <div className="flex gap-3">
@@ -405,16 +469,16 @@ export default function Analysis() {
                         4
                       </div>
                       <p>
-                        <strong>Underwriting recommending agent</strong> evaluates severity levels and synthesizes automatic insurance payout statements.
+                        <strong>Recommendation rules</strong> provide reviewer triage only; they are not insurance underwriting decisions.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-8 border-t border-slate-200/60 dark:border-white/5 pt-4 text-[10px] text-slate-400">
+                <div className="mt-8 border-t border-slate-200/60 dark:border-white/5 pt-4 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <ShieldCheck size={12} className="text-emerald-500" />
-                    Regulatory compliant claim verification
+                    Authentication-protected analysis workflow
                   </span>
                 </div>
               </Card>
@@ -553,62 +617,79 @@ export default function Analysis() {
             {/* Top overview result card */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              {/* Image Compare View (Original Specimen and XAI GradCAM overlay) */}
+              {/* The paired images always use the uploaded file and the API-generated Grad-CAM asset. */}
               <div className="lg:col-span-2">
                 <Card hoverable={false} className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200 dark:border-white/5 shadow-xl p-6">
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <ImageIcon size={18} className="text-emerald-500" />
-                    Explainable AI (XAI) Visualisation
+                    Explainable AI: Grad-CAM comparison
                   </h3>
+                  <p className="mt-1 mb-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    Grad-CAM highlights the image areas that influenced the model prediction. Compare your uploaded image with the classifier&apos;s generated Grad-CAM overlay.
+                  </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     {/* Original image block */}
-                    <div className="space-y-2 text-center">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                        Original Crop Specimen
-                      </span>
-                      <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 bg-slate-950/20 max-h-[300px] flex items-center justify-center p-2">
-                        <img
-                          src={previewUrl}
-                          alt="Original Specimen"
-                          className="max-h-[260px] max-w-full rounded-lg object-contain"
-                        />
+                    <figure className="min-w-0">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Original uploaded image</h4>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">Input</span>
                       </div>
-                    </div>
+                      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-950/20 p-2 dark:border-white/10">
+                        {previewUrl && !originalImageFailed ? (
+                          <img
+                            src={previewUrl}
+                            alt="Original crop image submitted for classification"
+                            className="h-full w-full rounded-lg object-contain"
+                            onError={() => setOriginalImageFailed(true)}
+                          />
+                        ) : (
+                          <div className="max-w-xs px-6 text-center" role="status">
+                            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-amber-500" aria-hidden="true" />
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Original image unavailable</p>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">The uploaded preview could not be displayed in this browser.</p>
+                          </div>
+                        )}
+                      </div>
+                      <figcaption className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">The source image supplied to this assessment.</figcaption>
+                    </figure>
 
                     {/* GradCAM image block */}
-                    <div className="space-y-2 text-center">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                        Grad-CAM Model Attention Overlay
-                      </span>
-                      <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/5 bg-slate-950/20 max-h-[300px] flex items-center justify-center p-2 relative">
-                        {predictionData.gradcam_image_path ? (
-                          <img
-                            src={getCleanGradcamUrl(predictionData.gradcam_image_path)}
-                            alt="Grad-CAM Hotspot"
-                            className="max-h-[260px] max-w-full rounded-lg object-contain"
-                            onError={(e) => {
-                              // If image fails to load (static file serve issue), fallback to canvas
-                              e.target.style.display = 'none';
-                              const canvas = document.getElementById('gradcam-canvas-overlay');
-                              if (canvas) canvas.style.display = 'block';
-                            }}
-                          />
-                        ) : null}
-
-                        {/* Interactive local Canvas fallback render */}
-                        <canvas
-                          id="gradcam-canvas-overlay"
-                          ref={canvasRef}
-                          className="max-h-[260px] max-w-full rounded-lg object-contain"
-                          style={{ display: predictionData.gradcam_image_path ? 'none' : 'block' }}
-                        />
+                    <figure className="min-w-0">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Classifier Grad-CAM overlay</h4>
+                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">Model output</span>
                       </div>
-                    </div>
+                      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-950/20 p-2 dark:border-white/10">
+                        {predictionData.gradcam_image_path && (
+                          <AuthorizedImage
+                            src={getGradcamImageUrl(predictionData.gradcam_image_path)}
+                            alt="Grad-CAM overlay showing image regions that influenced the classifier output"
+                            className={`h-full w-full rounded-lg object-contain transition-opacity ${gradcamImageState === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+                            unavailableText="Grad-CAM unavailable for this assessment"
+                            onStateChange={setGradcamImageState}
+                          />
+                        )}
+                        {gradcamImageState === 'loading' && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center" role="status" aria-live="polite">
+                            <RefreshCw className="mb-2 h-5 w-5 animate-spin text-emerald-500" aria-hidden="true" />
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Loading generated Grad-CAM…</p>
+                          </div>
+                        )}
+                        {!predictionData.gradcam_image_path && (
+                          <div className="max-w-xs px-6 text-center" role="status">
+                            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-amber-500" aria-hidden="true" />
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Grad-CAM unavailable</p>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">The classifier did not provide a viewable Grad-CAM image for this assessment.</p>
+                          </div>
+                        )}
+                      </div>
+                      <figcaption className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Generated by the backend classifier from this image—colour intensity represents relative influence on its predicted class.</figcaption>
+                    </figure>
                   </div>
 
-                  <p className="mt-4 text-xs text-slate-400 dark:text-slate-500 text-center leading-relaxed">
-                    Note: Red hotspots display pixels with high neural attention, indicating features heavily contributing to classification.
+                  <p className="mt-5 rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                    Grad-CAM is an explanation of the model&apos;s decision, not a diagnosis by itself. Use it to understand classifier attention alongside the confidence and assessment details.
                   </p>
                 </Card>
               </div>
@@ -625,11 +706,11 @@ export default function Analysis() {
 
                       {/* Diagnostic Class Pill */}
                       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-white/5 mb-4 text-center">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                        <span className="text-xs uppercase font-bold text-slate-400 block mb-1">
                           Detected Issue
                         </span>
                         <span className="text-lg font-black text-slate-800 dark:text-white block">
-                          {predictionData.classification}
+                          {predictionData.classification || 'Not available'}
                         </span>
                         {predictionData.category && (
                           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mt-1">
@@ -639,13 +720,13 @@ export default function Analysis() {
                         <div className="flex items-center justify-center gap-1.5 mt-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-xs text-emerald-500 font-bold">
-                            {(predictionData.classification_confidence * 100).toFixed(1)}% model confidence
+                            {formatPercent(predictionData.classification_confidence)} model confidence
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Severity Progress ring */}
+                    {/* Severity & Physical Damage Indicator */}
                     <div className="flex items-center gap-6">
                       <div className="relative h-20 w-20 flex-shrink-0 flex items-center justify-center">
                         {/* Circular ring indicator */}
@@ -653,31 +734,50 @@ export default function Analysis() {
                           <circle cx="40" cy="40" r="32" stroke="rgba(16, 185, 129, 0.1)" strokeWidth="8" fill="none" />
                           <motion.circle
                             cx="40" cy="40" r="32"
-                            stroke={predictionData.severity === 'Severe' ? '#ef4444' : predictionData.severity === 'Moderate' ? '#f59e0b' : '#10b981'}
+                            stroke={
+                              ['HIGH', 'SEVERE'].includes(String(predictionData.severity || '').toUpperCase())
+                                ? '#ef4444'
+                                : String(predictionData.severity || '').toUpperCase() === 'MODERATE'
+                                ? '#f59e0b'
+                                : '#10b981'
+                            }
                             strokeWidth="8"
                             strokeDasharray={2 * Math.PI * 32}
                             initial={{ strokeDashoffset: 2 * Math.PI * 32 }}
-                            animate={{ strokeDashoffset: 2 * Math.PI * 32 * (1 - predictionData.damage_percentage / 100) }}
+                            animate={{ strokeDashoffset: 0 }}
                             transition={{ duration: 1.2, ease: 'easeOut' }}
                             strokeLinecap="round"
                             fill="none"
                           />
                         </svg>
-                        <span className="text-base font-extrabold text-slate-800 dark:text-white">
-                          {predictionData.damage_percentage.toFixed(0)}%
+                        <span className={`text-[11px] font-black uppercase text-center px-1 leading-tight ${
+                          ['HIGH', 'SEVERE'].includes(String(predictionData.severity || '').toUpperCase())
+                            ? 'text-red-500'
+                            : String(predictionData.severity || '').toUpperCase() === 'MODERATE'
+                            ? 'text-amber-500'
+                            : 'text-emerald-500'
+                        }`}>
+                          {predictionData.severity || 'LOW'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                          Damage Severity
+                        <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">
+                          Domain-Informed Severity
                         </span>
-                        <span className={`text-lg font-extrabold block uppercase tracking-wider ${predictionData.severity === 'Severe' ? 'text-red-500' :
-                            predictionData.severity === 'Moderate' ? 'text-amber-500' : 'text-emerald-500'
-                          }`}>
-                          {predictionData.severity}
+                        <span className={`text-lg font-extrabold block uppercase tracking-wider ${
+                          ['HIGH', 'SEVERE'].includes(String(predictionData.severity || '').toUpperCase())
+                            ? 'text-red-500'
+                            : String(predictionData.severity || '').toUpperCase() === 'MODERATE'
+                            ? 'text-amber-500'
+                            : 'text-emerald-500'
+                        }`}>
+                          {predictionData.severity || 'Not available'}
                         </span>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">
-                          Risk Level: <strong className={predictionData.risk_level === 'High' ? 'text-red-500' : predictionData.risk_level === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}>{predictionData.risk_level || 'Low'}</strong>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          Risk Level: <strong className={predictionData.risk_level === 'High' ? 'text-red-500' : predictionData.risk_level === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}>{predictionData.risk_level || 'Not available'}</strong>
+                        </span>
+                        <span className="text-xs text-slate-400 block mt-1">
+                          Physical Damage: <strong className="text-slate-600 dark:text-slate-300">{formatDamage(predictionData.damage_percentage)}</strong>
                         </span>
                       </div>
                     </div>
@@ -688,14 +788,14 @@ export default function Analysis() {
                         <span className="text-slate-400 block mb-0.5">Latency</span>
                         <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
                           <Cpu size={12} className="text-emerald-500" />
-                          {predictionData.processing_time_ms.toFixed(0)} ms
+                          {formatMilliseconds(predictionData.processing_time_ms)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block mb-0.5">Gateway Status</span>
+                        <span className="text-slate-400 block mb-0.5">Pipeline Status</span>
                         <span className="font-bold text-emerald-500 flex items-center gap-1">
                           <CheckCircle size={12} />
-                          COMPLETED
+                          {predictionData.pipeline_status || 'Not available'}
                         </span>
                       </div>
                     </div>
@@ -711,6 +811,49 @@ export default function Analysis() {
 
             </div>
 
+            <Card hoverable={false} className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200 dark:border-white/5 shadow-xl p-6">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Assessment details</h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Severity represents domain-informed agronomic threat level, not physical damaged area. Physical damage percentage is not measured by the current model.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3 md:min-w-[58%]">
+                  <div className="rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-slate-950/30 p-3">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">Assessed</span>
+                    <span className="mt-1 block font-semibold text-slate-700 dark:text-slate-200">{formatTimestamp(predictionData.timestamp)}</span>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-slate-950/30 p-3">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">Upload ID</span>
+                    <span className="mt-1 block font-semibold text-slate-700 dark:text-slate-200">{predictionData.upload_id ?? 'Not available'}</span>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-slate-950/30 p-3">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">Preprocessing</span>
+                    <span className="mt-1 block font-semibold text-slate-700 dark:text-slate-200">{predictionData.preprocessing_status || 'Not available'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                <strong className="text-amber-700 dark:text-amber-300">Object Context:</strong>{' '}
+                YOLOv8 may detect general objects. These results are not direct crop-damage or lesion measurements.
+              </div>
+            </Card>
+
+            <InsuranceClaimReport prediction={predictionData} />
+
+            <ClaimEvidenceChecklist prediction={predictionData} claim={claimLookup.claim} imageInspection={imageInspection} gradcamState={gradcamImageState} />
+
+            <ClaimTimeline prediction={predictionData} claim={claimLookup.claim} imageInspection={imageInspection} gradcamState={gradcamImageState} />
+
+            <DiseaseTreatmentGuidance prediction={predictionData} />
+
+            <ConfidenceAndImageQuality confidence={predictionData.classification_confidence} />
+
+            <ClaimStatusPanel lookup={claimLookup} recommendation={predictionData.insurance_recommendation} prediction={predictionData} />
+
+            <FinancialStatusSettlement claim={claimLookup.claim} lookupState={claimLookup.state} prediction={predictionData} />
+
             {/* Insurance Decision / Underwriting Recommendations */}
             <Card hoverable={false} className="bg-gradient-to-r from-slate-900/90 to-slate-950/90 border border-emerald-500/20 shadow-neon-emerald/10 p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl" />
@@ -721,13 +864,13 @@ export default function Analysis() {
                     <div className="h-6 w-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                       <ShieldCheck size={14} />
                     </div>
-                    <span className="text-xs uppercase tracking-widest text-emerald-400 font-extrabold">
+                    <span className="text-xs tracking-widest text-emerald-400 font-extrabold">
                       Insurance Recommendation
                     </span>
                   </div>
 
                   <h4 className="text-lg font-bold text-white">
-                    {predictionData.insurance_recommendation}
+                    {predictionData.insurance_recommendation || 'Not available'}
                   </h4>
 
                   {predictionData.recommendation_reason && (
@@ -737,20 +880,22 @@ export default function Analysis() {
                   )}
 
                   <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
-                    This analysis is generated autonomously by YOLO leaf inspection and EfficientNet classifiers. Decision scores are verified against MySQL claim standards.
+                    These rules provide review guidance only. They do not make final insurance decisions.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-950/50 border border-white/5 text-center flex-shrink-0 min-w-[160px]">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                    Fraud Risk Index
+                  <span className="text-xs uppercase font-bold text-slate-500 block mb-1">
+                    Consistency Flag
                   </span>
                   <span className={`text-xl font-black block ${predictionData.fraud_risk > 0.4 ? 'text-red-500' : 'text-emerald-500'
                     }`}>
-                    {(predictionData.fraud_risk * 100).toFixed(1)}%
+                    {formatPercent(predictionData.fraud_risk)}
                   </span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mt-1">
-                    {predictionData.fraud_risk > 0.4 ? 'Verification Required' : 'Low Fraud Risk'}
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mt-1">
+                    {typeof predictionData.fraud_risk !== 'number'
+                      ? 'Not available'
+                      : predictionData.fraud_risk > 0.4 ? 'Verification Required' : 'No Rule Conflict'}
                   </span>
                 </div>
               </div>

@@ -113,6 +113,7 @@ class TestPredictionService(unittest.TestCase):
             class_index=2,
             confidence=0.85,
             filename="gradcam_123.jpg",
+            preprocess=mock_classifier.transforms,
         )
         mock_severity.analyze.assert_called_once_with(
             detections=self.detections_mock,

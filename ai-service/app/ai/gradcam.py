@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 import cv2
 import numpy as np
@@ -26,6 +26,11 @@ class HeatmapGenerationError(GradCAMError):
     pass
 
 
+import threading
+
+_gradcam_lock = threading.Lock()
+
+
 class GradCAMGenerator:
     """Generates Gradient-weighted Class Activation Mapping (Grad-CAM) heatmaps
 
@@ -43,6 +48,7 @@ class GradCAMGenerator:
         class_index: int,
         confidence: float | None = None,
         filename: str | None = None,
+        preprocess: Callable[[Image.Image], torch.Tensor] | None = None,
     ) -> Dict[str, Any]:
         """Generate a Grad-CAM heatmap, overlay it on the input image, and save it.
 
@@ -93,13 +99,15 @@ class GradCAMGenerator:
                 image_uint8 = image.astype(np.uint8)
 
             pil_img = Image.fromarray(image_uint8)
-            transforms = EfficientNet_B0_Weights.DEFAULT.transforms()
+            # Reuse the classifier transform when supplied so the explanation is
+            # generated from exactly the same normalized tensor as inference.
+            transforms = preprocess or EfficientNet_B0_Weights.DEFAULT.transforms()
             input_tensor = transforms(pil_img).unsqueeze(0)  # Shape -> (1, C, H, W)
         except Exception as exc:
             logger.exception("Failed to prepare input tensor for Grad-CAM analysis")
             raise GradCAMError("Failed to convert/preprocess image array") from exc
 
-        # 3. Setup hooks to capture activations and gradients
+        # 3. Setup hooks to capture activations and gradients with thread-safe lock
         activations = []
         gradients = []
 
@@ -118,31 +126,32 @@ class GradCAMGenerator:
             logger.error("Model does not appear to be an EfficientNet structure with a features attribute.")
             raise GradCAMError("Grad-CAM target layer 'model.features' not found. Ensure EfficientNet structure.") from exc
 
-        handle_forward = target_layer.register_forward_hook(forward_hook)
-        handle_backward = target_layer.register_full_backward_hook(backward_hook)
+        with _gradcam_lock:
+            handle_forward = target_layer.register_forward_hook(forward_hook)
+            handle_backward = target_layer.register_full_backward_hook(backward_hook)
 
-        # 4. Backward Pass w.r.t Target Class
-        try:
-            logger.info(f"Running backpropagation for class index {class_index}")
-            # Ensure gradients are enabled for this step
-            with torch.enable_grad():
-                outputs = model(input_tensor)
-                
-                # Check class index bounds
-                num_classes = outputs.shape[1]
-                if class_index < 0 or class_index >= num_classes:
-                    raise GradCAMError(f"Target class index {class_index} is out of model output range (0-{num_classes-1}).")
+            # 4. Backward Pass w.r.t Target Class
+            try:
+                logger.info(f"Running backpropagation for class index {class_index}")
+                # Ensure gradients are enabled for this step
+                with torch.enable_grad():
+                    outputs = model(input_tensor)
+                    
+                    # Check class index bounds
+                    num_classes = outputs.shape[1]
+                    if class_index < 0 or class_index >= num_classes:
+                        raise GradCAMError(f"Target class index {class_index} is out of model output range (0-{num_classes-1}).")
 
-                score = outputs[0, class_index]
-                model.zero_grad()
-                score.backward()
-        except Exception as exc:
-            logger.exception("Error executing model backward pass for class scores")
-            raise HeatmapGenerationError("Failed to execute gradient backpropagation") from exc
-        finally:
-            # Crucial: clean up hooks to prevent memory leaks!
-            handle_forward.remove()
-            handle_backward.remove()
+                    score = outputs[0, class_index]
+                    model.zero_grad()
+                    score.backward()
+            except Exception as exc:
+                logger.exception("Error executing model backward pass for class scores")
+                raise HeatmapGenerationError("Failed to execute gradient backpropagation") from exc
+            finally:
+                # Crucial: clean up hooks to prevent memory leaks!
+                handle_forward.remove()
+                handle_backward.remove()
 
         # 5. Extract Activations and Gradients
         if not activations or not gradients:
@@ -203,7 +212,8 @@ class GradCAMGenerator:
             
             # Convert RGB back to BGR for OpenCV write
             overlay_bgr = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(str(save_path), overlay_bgr)
+            if not cv2.imwrite(str(save_path), overlay_bgr):
+                raise OSError(f"OpenCV could not write {save_path}")
             logger.info(f"Grad-CAM heatmap successfully saved to: {save_path}")
         except Exception as exc:
             logger.exception(f"Failed to save heatmap visualization file to disk")

@@ -11,6 +11,7 @@ from app.database.base import Base
 
 if TYPE_CHECKING:
     from app.models.claim import Claim
+    from app.models.explanation_feedback import ExplanationFeedback
     from app.models.upload import Upload
 
 
@@ -62,6 +63,11 @@ class Prediction(Base):
     claim: Mapped["Claim | None"] = relationship(
         back_populates="prediction",
         uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    feedbacks: Mapped[list["ExplanationFeedback"]] = relationship(
+        back_populates="prediction",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )

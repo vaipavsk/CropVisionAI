@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
+from pathlib import Path
+from typing import Optional
 
 import firebase_admin
 from firebase_admin import auth as firebase_auth
@@ -15,29 +19,50 @@ from app.services.user_service import get_user_by_firebase_uid
 
 logger = logging.getLogger("cropvision.auth")
 
+# Log the exact Python interpreter so we can diagnose wrong-executable issues.
+logger.info("[auth] Python executable: %s", sys.executable)
+
 # ---------------------------------------------------------
 # Initialize Firebase Admin SDK
 # ---------------------------------------------------------
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate(
-            "cropvisionai-70c7a-firebase-adminsdk-fbsvc-162f48124e.json"
-        )
+        # Resolve the service account path absolutely from __file__ so it
+        # works regardless of the process working directory or how uvicorn
+        # was launched (reloader child, direct, etc.).
+        _sa_env = os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH", "")
+        if _sa_env:
+            _sa_path = Path(_sa_env) if Path(_sa_env).is_absolute() else Path(__file__).resolve().parent.parent.parent / _sa_env
+        else:
+            # Default: same directory as this auth.py's service root (ai-service/)
+            _sa_path = Path(__file__).resolve().parents[2] / "cropvisionai-70c7a-firebase-adminsdk-fbsvc-162f48124e.json"
+
+        logger.info("[auth] Firebase service account path: %s", _sa_path)
+        logger.info("[auth] Path exists: %s", _sa_path.exists())
+
+        cred = credentials.Certificate(str(_sa_path))
         firebase_admin.initialize_app(cred)
         logger.info("Firebase Admin SDK initialized successfully.")
     except Exception as exc:
         logger.exception("Firebase Admin SDK initialization failed")
         raise exc
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def verify_firebase_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
     """
     Verify Firebase ID token.
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Bearer authentication token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     try:

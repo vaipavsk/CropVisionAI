@@ -21,14 +21,17 @@ class TestRecommendationEngine(unittest.TestCase):
     """Test suite for validating the RecommendationEngine component."""
 
     def setUp(self) -> None:
-        self.engine = RecommendationEngine(high_confidence_threshold=0.90)
+        self.engine = RecommendationEngine(
+            high_confidence_threshold=0.90,
+            min_confidence_threshold=0.60,
+        )
 
     def test_approve_high_severity_high_confidence(self) -> None:
-        """Test automatic approval for severe damage and high classification confidence."""
+        """Test automatic approval for HIGH damage and high classification confidence."""
         # Rule: High severity & high confidence -> Approve
         result = self.engine.recommend(
             damage_percentage=75.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=8.5,
             recommendation_score=4,
             classification="Leaf Rust",
@@ -38,7 +41,7 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Approve result: {result}")
         self.assertEqual(result.decision, "Approve")
         self.assertFalse(result.requires_manual_review)
-        self.assertIn("strong ai confidence", result.reason.lower())
+        self.assertIn("strong ai classification confidence", result.reason.lower())
         self.assertEqual(result.confidence, 0.95)
 
         # Approve with severity_level "High" (case-insensitive)
@@ -58,7 +61,7 @@ class TestRecommendationEngine(unittest.TestCase):
         # Case with detected_objects as list
         result_list = self.engine.recommend(
             damage_percentage=25.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=8.5,
             recommendation_score=4,
             classification="Leaf Rust",
@@ -66,11 +69,11 @@ class TestRecommendationEngine(unittest.TestCase):
             detected_objects=[],
         )
         logger.info(f"Reject no detections (list) result: {result_list}")
-        self.assertEqual(result_list.decision, "Reject")
-        self.assertFalse(result_list.requires_manual_review)
-        self.assertIn("minimal visible damage", result_list.reason.lower())
-        self.assertEqual(result_list.confidence, 1.0)
-        self.assertEqual(result_list.fraud_risk, 0.90)  # High fraud risk: claiming damage with no crops
+        # High disease with moderate confidence triggers manual review
+        self.assertEqual(result_list.decision, "Manual Review")
+        self.assertTrue(result_list.requires_manual_review)
+        self.assertIn("moderate ai confidence", result_list.reason.lower())
+        self.assertEqual(result_list.confidence, 0.85)
 
         # Case with detected_objects as int 0
         result_int = self.engine.recommend(
@@ -86,7 +89,7 @@ class TestRecommendationEngine(unittest.TestCase):
         self.assertEqual(result_int.fraud_risk, 0.0)  # No damage claimed -> 0 fraud risk
 
     def test_reject_low_severity(self) -> None:
-        """Test rejection when crop damage severity is low."""
+        """Test rejection when crop damage severity is low and confidence is sufficient."""
         result = self.engine.recommend(
             damage_percentage=5.0,
             severity_level="Low",
@@ -99,14 +102,14 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Reject low severity result: {result}")
         self.assertEqual(result.decision, "Reject")
         self.assertFalse(result.requires_manual_review)
-        self.assertIn("minimal visible damage", result.reason.lower())
+        self.assertIn("no supported disease symptoms", result.reason.lower())
         self.assertEqual(result.confidence, 0.75)
 
     def test_manual_review_low_confidence(self) -> None:
-        """Test flagging for manual review when confidence is below 0.90."""
+        """Test flagging for manual review when confidence is below 0.60."""
         result = self.engine.recommend(
             damage_percentage=85.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=9.0,
             recommendation_score=5,
             classification="Leaf Rust",
@@ -116,14 +119,30 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Manual review low confidence result: {result}")
         self.assertEqual(result.decision, "Manual Review")
         self.assertTrue(result.requires_manual_review)
-        self.assertIn("insufficient ai confidence", result.reason.lower())
+        self.assertIn("low ai classification confidence", result.reason.lower())
         self.assertEqual(result.confidence, 0.55)
 
+    def test_manual_review_low_confidence_override_low_severity(self) -> None:
+        """Test that low classification confidence (e.g. 38% 'conch') overrides Low severity Reject decision."""
+        result = self.engine.recommend(
+            damage_percentage=17.0,
+            severity_level="LOW",
+            risk_score=2.0,
+            recommendation_score=2,
+            classification="conch",
+            classification_confidence=0.38,
+            detected_objects=1,
+        )
+        logger.info(f"Low confidence override result: {result}")
+        self.assertEqual(result.decision, "Manual Review")
+        self.assertTrue(result.requires_manual_review)
+        self.assertIn("low ai classification confidence (38.0%)", result.reason.lower())
+
     def test_manual_review_unknown_classification(self) -> None:
-        """Test flagging for manual review when classification is unknown."""
+        """Test flagging for manual review when classification starts with unknown_class_."""
         result = self.engine.recommend(
             damage_percentage=75.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=8.5,
             recommendation_score=4,
             classification="unknown_class_4",
@@ -133,13 +152,13 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Manual review unknown class result: {result}")
         self.assertEqual(result.decision, "Manual Review")
         self.assertTrue(result.requires_manual_review)
-        self.assertIn("insufficient ai confidence", result.reason.lower())
+        self.assertIn("unrecognized crop classification", result.reason.lower())
 
     def test_manual_review_moderate_severity(self) -> None:
         """Test flagging for manual review when severity is moderate."""
         result = self.engine.recommend(
             damage_percentage=55.0,
-            severity_level="Moderate",
+            severity_level="MODERATE",
             risk_score=4.5,
             recommendation_score=3,
             classification="Leaf Rust",
@@ -149,14 +168,14 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Manual review moderate severity result: {result}")
         self.assertEqual(result.decision, "Manual Review")
         self.assertTrue(result.requires_manual_review)
-        self.assertIn("moderate damage requires inspector verification", result.reason.lower())
+        self.assertIn("moderate agronomic disease threat requires field inspector assessment", result.reason.lower())
 
     def test_manual_review_fallback_borderline_confidence(self) -> None:
-        """Test manual review fallback for severe damage when confidence is moderate but below the high threshold."""
-        # Severe severity, confidence 0.70 is <= 0.90
+        """Test manual review fallback for high damage when confidence is moderate but below the high threshold."""
+        # High severity, confidence 0.70 is <= 0.90
         result = self.engine.recommend(
             damage_percentage=75.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=7.5,
             recommendation_score=4,
             classification="Leaf Rust",
@@ -166,7 +185,7 @@ class TestRecommendationEngine(unittest.TestCase):
         logger.info(f"Manual review fallback result: {result}")
         self.assertEqual(result.decision, "Manual Review")
         self.assertTrue(result.requires_manual_review)
-        self.assertIn("insufficient ai confidence", result.reason.lower())
+        self.assertIn("moderate ai confidence", result.reason.lower())
 
     def test_invalid_inputs(self) -> None:
         """Test that malformed inputs raise InvalidRecommendationInputError."""
@@ -221,12 +240,12 @@ class TestRecommendationEngine(unittest.TestCase):
     def test_boundary_conditions_and_custom_thresholds(self) -> None:
         """Test boundary values for confidence thresholds and custom initialization."""
         # Custom high confidence threshold set to 0.65
-        custom_engine = RecommendationEngine(high_confidence_threshold=0.65)
+        custom_engine = RecommendationEngine(high_confidence_threshold=0.65, min_confidence_threshold=0.50)
         
-        # Severe + confidence 0.70 >= 0.65 -> Should now Approve (instead of Manual Review)
+        # HIGH + confidence 0.70 >= 0.65 -> Should now Approve (instead of Manual Review)
         result = custom_engine.recommend(
             damage_percentage=75.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=7.5,
             recommendation_score=4,
             classification="Leaf Rust",
@@ -238,7 +257,7 @@ class TestRecommendationEngine(unittest.TestCase):
         # Boundary test: confidence exactly at 0.90
         result_exact_boundary = self.engine.recommend(
             damage_percentage=75.0,
-            severity_level="Severe",
+            severity_level="HIGH",
             risk_score=7.5,
             recommendation_score=4,
             classification="Leaf Rust",
@@ -247,6 +266,19 @@ class TestRecommendationEngine(unittest.TestCase):
         )
         # Should flag for manual review because 0.90 <= 0.90 high confidence threshold
         self.assertEqual(result_exact_boundary.decision, "Manual Review")
+
+    def test_legacy_severe_label_backward_compatibility(self) -> None:
+        """Test that legacy 'Severe' label is gracefully mapped to HIGH for backwards compatibility."""
+        result = self.engine.recommend(
+            damage_percentage=85.0,
+            severity_level="Severe",
+            risk_score=9.0,
+            recommendation_score=5,
+            classification="Wheat Blast",
+            classification_confidence=0.95,
+            detected_objects=5,
+        )
+        self.assertEqual(result.decision, "Approve")
 
     def test_fraud_risk_healthy_inconsistencies(self) -> None:
         """Test specific fraud risk scenarios for healthy crop with claimed damage."""

@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 def categorize_issue(issue_name: str) -> str:
     name_lower = issue_name.strip().lower()
     
+    # Check for Healthy Crop
+    if "healthy" in name_lower:
+        return "Healthy Crop"
+        
     # Check for Insect Pest Damage
     pest_keywords = [
         "hispa", "insect", "pest", "caterpillar", "aphid", "mite", "worm", 
@@ -58,7 +62,6 @@ def categorize_issue(issue_name: str) -> str:
         return "Fungal Disease"
         
     return "Unknown"
-
 
 
 class PredictionServiceError(Exception):
@@ -163,6 +166,7 @@ class PredictionService(BaseService):
                 class_index=classification_result["class_index"],
                 confidence=classification_result["confidence"],
                 filename=filename,
+                preprocess=classifier.transforms,
             )
             gradcam_image_path = gradcam_result["heatmap_path"]
             logger.info(f"Grad-CAM completed. Heatmap saved to: {gradcam_image_path}")
@@ -179,7 +183,7 @@ class PredictionService(BaseService):
                 detections=detections,
                 classification=classification_result,
             )
-            logger.info(f"Severity completed: level={severity_result['severity']}, percentage={severity_result['damage_percentage']}%, risk={severity_result['risk_score']:.2f}")
+            logger.info(f"Severity completed: level={severity_result['severity']}, percentage={severity_result['damage_percentage']}, risk={severity_result['risk_score']:.2f}")
         except Exception as exc:
             logger.exception("Pipeline failed during Severity Analysis stage.")
             raise PredictionServiceError("Severity analysis failed.") from exc
@@ -211,9 +215,10 @@ class PredictionService(BaseService):
         # Compute category and risk level
         category = categorize_issue(classification_result["class_name"])
         damage_pct = severity_result["damage_percentage"]
-        if damage_pct > 70.0:
+        sev_tier = severity_result.get("severity", "LOW")
+        if sev_tier in ("HIGH", "SEVERE"):
             risk_lvl = "High"
-        elif 40.0 <= damage_pct <= 70.0:
+        elif sev_tier == "MODERATE":
             risk_lvl = "Medium"
         else:
             risk_lvl = "Low"

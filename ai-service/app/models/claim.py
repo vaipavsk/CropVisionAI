@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base
 
 if TYPE_CHECKING:
+    from app.models.explanation_feedback import ExplanationFeedback
     from app.models.prediction import Prediction
 
 
@@ -58,3 +59,8 @@ class Claim(Base):
     )
 
     prediction: Mapped["Prediction"] = relationship(back_populates="claim")
+    feedbacks: Mapped[list["ExplanationFeedback"]] = relationship(
+        back_populates="claim",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

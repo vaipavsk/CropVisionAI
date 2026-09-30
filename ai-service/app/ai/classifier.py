@@ -1,6 +1,29 @@
 from __future__ import annotations
 
 import logging
+import json
+from pathlib import Path
+from typing import Any, Dict, List
+
+import numpy as np
+import torch
+from PIL import Image
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+
+from app.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+
+class ClassifierError(Exception):
+    """Base exception for all classifier-related errors."""
+    pass
+
+
+class ModelLoadError(ClassifierError):
+    """Exception raised when the EfficientNet model or weights fail to load."""
+    pass
+
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -29,6 +52,11 @@ class InferenceError(ClassifierError):
     pass
 
 
+_cached_model = None
+_cached_categories = None
+_cached_transforms = None
+
+
 class EfficientNetClassifier:
     """Classifies crop damage or crop categories using an EfficientNet-B0 model."""
 
@@ -49,58 +77,88 @@ class EfficientNetClassifier:
         Raises:
             ModelLoadError: If the model architecture cannot be set up or the weights fail to load.
         """
+        global _cached_model, _cached_categories, _cached_transforms
+
+        # Optimize PyTorch CPU intra-op thread count to prevent thread contention during concurrent inference
+        if torch.get_num_threads() > 2:
+            torch.set_num_threads(2)
+
         # Resolve weights path
         if weights_path is None:
             settings = get_settings()
             self.weights_path = settings.efficientnet_weights_absolute_path
+            mapping_path = settings.efficientnet_class_mapping_absolute_path
         else:
             self.weights_path = Path(weights_path)
+            mapping_path = None
+
+        if self.weights_path is None:
+            raise ModelLoadError("No crop-disease checkpoint is configured; ImageNet fallback is disabled.")
+
+        # Reuse pre-loaded PyTorch model if available
+        if _cached_model is not None and weights_path is None and categories is None:
+            self.model = _cached_model
+            self.categories = _cached_categories
+            self.transforms = _cached_transforms
+            self.model.eval()
+            return
 
         # Set evaluation mode
         self.model = None
 
-        if self.weights_path is None:
-            # Load default torchvision ImageNet pretrained weights
-            try:
-                logger.info("Loading default pretrained EfficientNet-B0 ImageNet weights")
-                weights = EfficientNet_B0_Weights.DEFAULT
-                self.model = efficientnet_b0(weights=weights)
-                self.transforms = weights.transforms()
-                self.categories = categories if categories is not None else weights.meta["categories"]
-            except Exception as exc:
-                logger.exception("Failed to initialize default EfficientNet-B0 model")
-                raise ModelLoadError("Failed to initialize default EfficientNet-B0 model") from exc
-        else:
-            # Load custom model weights
-            if not self.weights_path.exists():
-                logger.error(f"Custom weights file not found at: {self.weights_path}")
-                raise ModelLoadError(f"Custom weights file not found at: {self.weights_path}")
+        # Load custom model weights
+        if not self.weights_path.exists():
+            logger.error(f"Custom weights file not found at: {self.weights_path}")
+            raise ModelLoadError(f"Custom weights file not found at: {self.weights_path}")
 
-            try:
-                logger.info(f"Loading custom EfficientNet-B0 weights from {self.weights_path}")
-                num_classes = len(categories) if categories is not None else 1000
-                
-                # Construct empty architecture
-                self.model = efficientnet_b0(weights=None)
-                if num_classes != 1000:
-                    logger.info(f"Modifying final classifier layer to output {num_classes} classes")
-                    self.model.classifier[1] = torch.nn.Linear(
-                        self.model.classifier[1].in_features, num_classes
-                    )
+        try:
+            resolved_categories = categories or self._load_categories(mapping_path)
+            num_classes = len(resolved_categories)
+            if num_classes != 37:
+                raise ModelLoadError(f"Crop-disease class mapping must contain 37 labels; found {num_classes}.")
+            logger.info("Loading 37-class crop-disease EfficientNet-B0 checkpoint from %s", self.weights_path)
+            
+            # Construct empty architecture
+            self.model = efficientnet_b0(weights=None)
+            if num_classes != 1000:
+                logger.info(f"Modifying final classifier layer to output {num_classes} classes")
+                self.model.classifier[1] = torch.nn.Linear(
+                    self.model.classifier[1].in_features, num_classes
+                )
 
-                # Load weight state dict
-                state_dict = torch.load(self.weights_path, map_location="cpu")
-                self.model.load_state_dict(state_dict)
+            # Load weight state dict
+            state_dict = torch.load(self.weights_path, map_location="cpu", weights_only=True)
+            head = state_dict.get("classifier.1.weight") if isinstance(state_dict, dict) else None
+            if head is None or tuple(head.shape) != (num_classes, 1280):
+                raise ModelLoadError("Checkpoint classifier head does not match the 37-class EfficientNet-B0 architecture.")
+            self.model.load_state_dict(state_dict)
 
-                # Fallback to official default transforms for shape preprocessing
-                self.transforms = EfficientNet_B0_Weights.DEFAULT.transforms()
-                self.categories = categories if categories is not None else [f"class_{i}" for i in range(num_classes)]
-            except Exception as exc:
-                logger.exception(f"Failed to load custom weights from {self.weights_path}")
-                raise ModelLoadError(f"Failed to initialize custom EfficientNet-B0 model from {self.weights_path}") from exc
+            # Fallback to official default transforms for shape preprocessing
+            self.transforms = EfficientNet_B0_Weights.DEFAULT.transforms()
+            self.categories = resolved_categories
+
+            if weights_path is None and categories is None:
+                _cached_model = self.model
+                _cached_categories = self.categories
+                _cached_transforms = self.transforms
+        except Exception as exc:
+            logger.exception(f"Failed to load custom weights from {self.weights_path}")
+            raise ModelLoadError(f"Failed to initialize custom EfficientNet-B0 model from {self.weights_path}") from exc
 
         # Set model to evaluation mode
         self.model.eval()
+
+    @staticmethod
+    def _load_categories(mapping_path: Path | None) -> List[str]:
+        if mapping_path is None or not mapping_path.exists():
+            raise ModelLoadError(f"Crop-disease class mapping file not found: {mapping_path}")
+        try:
+            mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
+            if not isinstance(mapping, dict) or sorted(mapping.values()) != list(range(len(mapping))):
+                raise ValueError("indices must be unique and contiguous from zero")
+            return [label for label, _ in sorted(mapping.items(), key=lambda item: item[1])]
+        except Exception as exc:
+            raise ModelLoadError(f"Invalid crop-disease class mapping: {mapping_path}") from exc
 
     def classify(self, image: np.ndarray) -> Dict[str, Any]:
         """Perform classification inference on a cropped RGB image.

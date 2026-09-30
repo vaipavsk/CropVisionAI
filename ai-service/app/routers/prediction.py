@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.dependencies.rate_limiter import predict_rate_limiter
 from app.models.upload import Upload
 from app.models.user import User, UserRole
 from app.security.roles import RoleChecker
@@ -25,6 +27,7 @@ get_farmer_user = Depends(RoleChecker([UserRole.FARMER]))
     "/{upload_id}",
     response_model=PredictionResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(predict_rate_limiter)],
 )
 def predict_crop_damage(
     upload_id: int,
@@ -82,8 +85,17 @@ def predict_crop_damage(
     execution_time_ms = (time.perf_counter() - start_time) * 1000.0
     logger.info(f"Prediction completed for upload ID {upload_id} in {execution_time_ms:.2f} ms")
 
+    # Persistence retains internal paths, but API consumers receive only the
+    # authenticated media routes and never filesystem locations.
+    public_result = result.model_copy(
+        update={
+            "image_path": f"/media/uploads/{Path(result.image_path).name}",
+            "gradcam_image_path": f"/media/heatmaps/{Path(result.gradcam_image_path).name}",
+        }
+    )
+
     return PredictionResponse(
         success=True,
         message="Prediction completed successfully.",
-        data=result,
+        data=public_result,
     )

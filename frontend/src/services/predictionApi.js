@@ -1,4 +1,5 @@
-import api, { handleApiError } from './api';
+import aiApi from './aiApi';
+import { handleApiError } from './api';
 
 /**
  * Runs YOLOv8 and EfficientNet inference on an uploaded crop image.
@@ -7,7 +8,7 @@ import api, { handleApiError } from './api';
  */
 export const predict = async (uploadId) => {
   try {
-    const response = await api.post(`/predict/${uploadId}`);
+    const response = await aiApi.post(`/predict/${uploadId}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);

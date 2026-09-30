@@ -271,7 +271,7 @@ export function Dashboard() {
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white">{upload.crop}</h4>
                     <span className="text-[10px] text-slate-400 font-semibold uppercase">{upload.id}</span>
                   </div>
-                  <Badge variant={upload.severity > 50 ? 'danger' : upload.severity > 20 ? 'warning' : 'success'}>
+                  <Badge variant={upload.severity > 70 ? 'danger' : upload.severity > 15 ? 'warning' : 'success'}>
                     {upload.severity}% Damage
                   </Badge>
                 </div>

@@ -20,121 +20,132 @@ logger = logging.getLogger("test_severity")
 
 
 class TestSeverityAnalyzer(unittest.TestCase):
-    """Test suite for validating the SeverityAnalyzer component."""
+    """Test suite for validating the Domain-Informed SeverityAnalyzer (Task 42)."""
 
-    def test_low_severity_healthy(self) -> None:
-        """Test severity analysis for a healthy crop classification with no detections."""
-        analyzer = SeverityAnalyzer()
-        detections = []
-        classification = {
-            "class_index": 0,
-            "class_name": "Healthy Wheat",
-            "confidence": 0.95,
-        }
+    def setUp(self) -> None:
+        self.analyzer = SeverityAnalyzer()
 
-        result = analyzer.analyze(detections, classification)
-        logger.info(f"Healthy output result: {result}")
-
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result["severity"], "Low")
-        self.assertEqual(result["damage_percentage"], 0.0)
-        self.assertEqual(result["recommendation_score"], 1)
-        self.assertTrue(0.0 <= result["risk_score"] <= 1.0)
-
-    def test_moderate_severity_diseased(self) -> None:
-        """Test severity analysis for a disease classification with minor detections."""
-        analyzer = SeverityAnalyzer()
-        detections = [
-            {"class_id": 1, "class_name": "Rust Spot", "confidence": 0.8}
+    def test_healthy_classes_produce_low_severity_and_null_damage(self) -> None:
+        """Test healthy classes: Corn_Healthy, Pepper_Healthy, Potato_Healthy, Rice_Healthy, Tomato_Healthy."""
+        healthy_classes = [
+            "Corn_Healthy",
+            "Pepper_Healthy",
+            "Potato_Healthy",
+            "Rice_Healthy",
+            "Tomato_Healthy",
         ]
-        classification = {
-            "class_index": 3,
-            "class_name": "Leaf Rust",
-            "confidence": 0.5,
-        }
+        for class_name in healthy_classes:
+            result = self.analyzer.analyze(class_name, 0.95)
+            self.assertEqual(result["severity"], "LOW")
+            self.assertIsNone(result["damage_percentage"])
+            self.assertFalse(result["physical_damage_supported"])
+            self.assertIn("No supported disease symptoms detected", result["severity_basis"])
+            self.assertFalse(result["confidence_review_required"])
+            self.assertEqual(result["risk_score"], 0.0)
+            self.assertEqual(result["recommendation_score"], 1)
 
-        # Expected damage: spots weight (0.8 * 15.0 = 12.0) + disease influence (0.5 * 45.0 = 22.5) = 34.5%
-        # Thresholds: Low < 15%, Moderate < 40%, Severe >= 40%
-        # Thus, 34.5% should be mapped to "Moderate"
-        result = analyzer.analyze(detections, classification)
-        logger.info(f"Moderate output result: {result}")
-
-        self.assertEqual(result["severity"], "Moderate")
-        self.assertEqual(result["damage_percentage"], 34.5)
-        self.assertEqual(result["recommendation_score"], 3)
-        self.assertTrue(2.0 <= result["risk_score"] <= 7.0)
-
-    def test_severe_severity_critical(self) -> None:
-        """Test severity analysis for high spot counts and severe classifications."""
-        analyzer = SeverityAnalyzer()
-        detections = [
-            {"class_id": 1, "class_name": "Lesion", "confidence": 0.9},
-            {"class_id": 1, "class_name": "Lesion", "confidence": 0.8},
-            {"class_id": 1, "class_name": "Lesion", "confidence": 0.75},
+    def test_moderate_disease_classes(self) -> None:
+        """Test moderate severity classes: Corn_Common_Rust, Pepper_Bacterial_Spot, Potato_Early_Blight, Tomato_Early_Blight."""
+        moderate_classes = [
+            "Corn_Common_Rust",
+            "Pepper_Bacterial_Spot",
+            "Potato_Early_Blight",
+            "Tomato_Early_Blight",
         ]
-        classification = {
-            "class_index": 4,
-            "class_name": "Stem Borer Damage",
-            "confidence": 0.9,
-        }
+        for class_name in moderate_classes:
+            result = self.analyzer.analyze(class_name, 0.92)
+            self.assertEqual(result["severity"], "MODERATE")
+            self.assertIsNone(result["damage_percentage"])
+            self.assertFalse(result["physical_damage_supported"])
+            self.assertEqual(result["risk_score"], 5.0)
+            self.assertEqual(result["recommendation_score"], 3)
 
-        result = analyzer.analyze(detections, classification)
-        logger.info(f"Severe output result: {result}")
+    def test_high_disease_classes(self) -> None:
+        """Test high severity classes: Potato_Late_Blight, Rice_Leaf_Blast, Rice_Tungro, Tomato_Late_Blight, Tomato_Yellow_Leaf_Curl_Virus."""
+        high_classes = [
+            "Potato_Late_Blight",
+            "Rice_Leaf_Blast",
+            "Rice_Tungro",
+            "Tomato_Late_Blight",
+            "Tomato_Yellow_Leaf_Curl_Virus",
+        ]
+        for class_name in high_classes:
+            result = self.analyzer.analyze(class_name, 0.98)
+            self.assertEqual(result["severity"], "HIGH")
+            self.assertIsNone(result["damage_percentage"])
+            self.assertFalse(result["physical_damage_supported"])
+            self.assertEqual(result["risk_score"], 8.5)
+            self.assertEqual(result["recommendation_score"], 4)
 
-        self.assertEqual(result["severity"], "Severe")
-        self.assertGreaterEqual(result["damage_percentage"], 40.0)
-        # Recommendation score should be 4 or 5 depending on the severe threshold (90%)
-        # Here: yolo = (0.9 + 0.8 + 0.75) * 15 = 36.75; disease = 0.9 * 45 = 40.5; total = 77.25%
-        # Since 77.25% < 90% (severe threshold), recommendation score should be 4
-        self.assertEqual(result["recommendation_score"], 4)
+    def test_confidence_isolation_and_review_trigger(self) -> None:
+        """Verify that confidence does NOT alter severity tier, but triggers review below 0.60."""
+        # Test Potato_Late_Blight (HIGH) across confidence spectrum
+        for conf in [0.95, 0.60, 0.599, 0.40]:
+            res = self.analyzer.analyze("Potato_Late_Blight", conf)
+            self.assertEqual(res["severity"], "HIGH")  # Severity remains HIGH
+            self.assertIsNone(res["damage_percentage"])
+            if conf >= 0.60:
+                self.assertFalse(res["confidence_review_required"])
+            else:
+                self.assertTrue(res["confidence_review_required"])
 
-        # Force severe threshold lower to trigger critical recommendation score 5
-        analyzer_custom = SeverityAnalyzer(severe_threshold=70.0)
-        result_custom = analyzer_custom.analyze(detections, classification)
-        self.assertEqual(result_custom["recommendation_score"], 5)
+        # Test Potato_Early_Blight (MODERATE) across confidence spectrum
+        for conf in [0.95, 0.60, 0.599, 0.40]:
+            res = self.analyzer.analyze("Potato_Early_Blight", conf)
+            self.assertEqual(res["severity"], "MODERATE")  # Severity remains MODERATE (not upgraded to HIGH)
+            self.assertIsNone(res["damage_percentage"])
+            if conf >= 0.60:
+                self.assertFalse(res["confidence_review_required"])
+            else:
+                self.assertTrue(res["confidence_review_required"])
 
-    def test_configurable_thresholds_override(self) -> None:
-        """Test that overriding thresholds dynamically changes mapping categories."""
-        # Standard: 0-15 Low, 15-40 Moderate, 40+ Severe
-        # Let's check a damage percentage of 20%
-        detections = []
-        classification = {
-            "class_name": "Mild Rust",
-            "confidence": 0.4444, # 0.4444 * 45 = ~20%
-        }
+    def test_yolo_detections_cannot_change_severity(self) -> None:
+        """Verify that YOLO detections (COCO pretrained) have 0 impact on domain severity."""
+        base_res = self.analyzer.analyze("Potato_Early_Blight", 0.90)
         
-        analyzer_std = SeverityAnalyzer()
-        result_std = analyzer_std.analyze(detections, classification)
-        self.assertEqual(result_std["severity"], "Moderate")  # 20.0% is in [15, 40)
+        # Add 10 simulated bounding box detections
+        detections = [{"class_id": i, "confidence": 0.99, "bbox": [10, 10, 50, 50]} for i in range(10)]
+        yolo_res = self.analyzer.analyze(
+            classification={"class_name": "Potato_Early_Blight", "confidence": 0.90},
+            detections=detections,
+        )
 
-        # Dynamic override: low_threshold=25.0
-        analyzer_low_shifted = SeverityAnalyzer(low_threshold=25.0)
-        result_shifted = analyzer_low_shifted.analyze(detections, classification)
-        self.assertEqual(result_shifted["severity"], "Low")   # 20.0% is < 25.0
+        self.assertEqual(base_res["severity"], yolo_res["severity"])
+        self.assertEqual(base_res["risk_score"], yolo_res["risk_score"])
+        self.assertEqual(base_res["damage_percentage"], yolo_res["damage_percentage"])
+        self.assertIsNone(yolo_res["damage_percentage"])
+
+    def test_no_numeric_pseudo_damage_percentage_is_generated(self) -> None:
+        """Verify damage_percentage is strictly None and physical_damage_supported is False."""
+        all_test_classes = [
+            "Corn_Healthy",
+            "Corn_Common_Rust",
+            "Potato_Early_Blight",
+            "Potato_Late_Blight",
+            "Rice_Leaf_Blast",
+            "Tomato_Yellow_Leaf_Curl_Virus",
+        ]
+        for c in all_test_classes:
+            res = self.analyzer.analyze(c, 0.85)
+            self.assertIsNone(res["damage_percentage"])
+            self.assertFalse(res["physical_damage_supported"])
 
     def test_invalid_inputs(self) -> None:
         """Test that malformed inputs raise InvalidSeverityInputError."""
-        analyzer = SeverityAnalyzer()
-
-        # Detections not a list
+        # Empty class name
         with self.assertRaises(InvalidSeverityInputError):
-            analyzer.analyze("not a list", {})  # type: ignore[arg-type]
+            self.analyzer.analyze("", 0.8)
 
-        # Individual detection not a dict
+        # Invalid confidence bounds
         with self.assertRaises(InvalidSeverityInputError):
-            analyzer.analyze(["not a dict"], {})  # type: ignore[arg-type]
+            self.analyzer.analyze("Corn_Healthy", 1.5)
 
-        # Missing confidence in detection
         with self.assertRaises(InvalidSeverityInputError):
-            analyzer.analyze([{"class_id": 1}], {})  # type: ignore[list-item]
+            self.analyzer.analyze("Corn_Healthy", -0.1)
 
-        # Classification not a dict
+        # Malformed classification dict
         with self.assertRaises(InvalidSeverityInputError):
-            analyzer.analyze([], "not a dict")  # type: ignore[arg-type]
-
-        # Missing keys in classification
-        with self.assertRaises(InvalidSeverityInputError):
-            analyzer.analyze([], {"confidence": 0.8})
+            self.analyzer.analyze({"invalid_key": "data"})
 
 
 if __name__ == "__main__":

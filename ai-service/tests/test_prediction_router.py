@@ -19,6 +19,16 @@ from app.routers.prediction import get_farmer_user
 from app.models.user import User, UserRole
 
 
+class TestPredictionAuthentication(unittest.TestCase):
+    def tearDown(self) -> None:
+        app.dependency_overrides.clear()
+
+    def test_missing_bearer_token_returns_401(self) -> None:
+        response = TestClient(app).post("/predict/123")
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("missing bearer", response.json()["detail"].lower())
+
+
 class TestPredictionRouter(unittest.TestCase):
     """Test suite for validating the prediction FastAPI endpoint using TestClient."""
 
@@ -78,6 +88,8 @@ class TestPredictionRouter(unittest.TestCase):
         self.assertEqual(data_payload["classification"], "Leaf Rust")
         self.assertEqual(data_payload["severity"], "Moderate")
         self.assertEqual(data_payload["insurance_recommendation"], "Manual Review")
+        self.assertEqual(data_payload["image_path"], "/media/uploads/mock_image.jpg")
+        self.assertEqual(data_payload["gradcam_image_path"], "/media/heatmaps/gradcam_heatmap.jpg")
         
         mock_service.predict.assert_called_once_with(123)
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from app.config import get_settings
+from app.ai.agronomic_knowledge import get_agronomic_profile
 
 logger = logging.getLogger(__name__)
 
@@ -19,150 +19,140 @@ class InvalidSeverityInputError(SeverityError, ValueError):
 
 
 class SeverityAnalyzer:
-    """A rule-based evaluation engine to estimate crop damage severity, risk score,
+    """Domain-informed crop damage severity analyzer.
 
-    and action recommendation levels from multi-modal model outputs.
+    Replaces uncalibrated pseudo-damage percentages with authoritative agronomic
+    disease impact profiles (LOW / MODERATE / HIGH / INSUFFICIENT_EVIDENCE).
+
+    Physical damage percentage is explicitly set to None (not measured), as the
+    classification dataset lacks spatial ground-truth lesion masks.
     """
 
-    def __init__(
-        self,
-        low_threshold: float | None = None,
-        moderate_threshold: float | None = None,
-        high_threshold: float | None = None,
-        severe_threshold: float | None = None,
-    ) -> None:
-        """Initialize the SeverityAnalyzer with configurable thresholds.
-
-        Args:
-            low_threshold: Under this percentage, damage is classified as Low.
-            moderate_threshold: Under this, damage is classified as Moderate (if above low).
-            high_threshold: Used for detailed risk mappings.
-            severe_threshold: Above this, recommendations are set to highest urgency.
-        """
-        settings = get_settings()
-        self.low_threshold = low_threshold if low_threshold is not None else settings.low_damage_threshold
-        self.moderate_threshold = moderate_threshold if moderate_threshold is not None else settings.moderate_damage_threshold
-        self.high_threshold = high_threshold if high_threshold is not None else settings.high_damage_threshold
-        self.severe_threshold = severe_threshold if severe_threshold is not None else settings.severe_damage_threshold
-
-        logger.info(
-            f"Initialized SeverityAnalyzer with thresholds: "
-            f"Low={self.low_threshold}%, Moderate={self.moderate_threshold}%, "
-            f"High={self.high_threshold}%, Severe={self.severe_threshold}%"
-        )
+    def __init__(self) -> None:
+        """Initialize the Domain-Informed SeverityAnalyzer."""
+        logger.info("Initialized Domain-Informed SeverityAnalyzer.")
 
     def analyze(
         self,
-        detections: List[Dict[str, Any]],
-        classification: Dict[str, Any],
-        gradcam: Dict[str, Any] | None = None,
+        predicted_class_or_detections_or_dict: Any = None,
+        confidence_or_classification: Any = None,
+        detections: Optional[List[Dict[str, Any]]] = None,
+        classification: Optional[Dict[str, Any]] = None,
+        gradcam: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze the fused results of detection and classification to assess damage severity.
+        """Assess crop damage severity using domain-informed disease profiles.
 
-        Args:
-            detections: List of dictionary outputs from YOLODetector.
-            classification: Dictionary outcome from EfficientNetClassifier.
-            gradcam: Optional Grad-CAM dictionary metadata.
+        Supports flexible signatures:
+            - analyze("Potato_Late_Blight", 0.95)
+            - analyze(classification={"class_name": "Potato_Late_Blight", "confidence": 0.95})
+            - analyze(detections=[...], classification={"class_name": "...", "confidence": ...})
+            - analyze(detections, classification)
 
         Returns:
-            Dict[str, Any]: Structured severity metrics:
+            Dict[str, Any]: Structured domain-informed severity metrics:
                 {
-                    "damage_percentage": float,
-                    "severity": str,  # "Low", "Moderate", "Severe"
-                    "risk_score": float,  # Range [0.0, 10.0]
+                    "severity": str,  # "LOW", "MODERATE", "HIGH", "INSUFFICIENT_EVIDENCE"
+                    "severity_basis": str,
+                    "confidence": float,
+                    "confidence_review_required": bool,
+                    "damage_percentage": None,  # Explicitly None (no spatial model)
+                    "physical_damage_supported": False,
+                    "risk_score": float,  # Categorical risk representation [0.0, 10.0]
                     "recommendation_score": int  # Range [1, 5]
                 }
 
         Raises:
             InvalidSeverityInputError: If incoming structures are malformed.
         """
-        # 1. Input validations
-        if not isinstance(detections, list):
-            logger.error("Detections input is not a list.")
-            raise InvalidSeverityInputError("Detections input must be a list.")
+        raw_class = None
+        raw_conf = None
 
-        for idx, det in enumerate(detections):
-            if not isinstance(det, dict):
-                logger.error(f"Detection at index {idx} is not a dictionary.")
-                raise InvalidSeverityInputError(f"Each detection element must be a dictionary. Got type {type(det)}")
-            if "confidence" not in det:
-                logger.error(f"Detection at index {idx} is missing 'confidence' score.")
-                raise InvalidSeverityInputError("Each detection dictionary must contain a 'confidence' key.")
-
-        if not isinstance(classification, dict):
-            logger.error("Classification input is not a dictionary.")
-            raise InvalidSeverityInputError("Classification input must be a dictionary.")
-
-        if "class_name" not in classification or "confidence" not in classification:
-            logger.error("Classification dictionary missing mandatory keys.")
-            raise InvalidSeverityInputError("Classification must contain 'class_name' and 'confidence' keys.")
-
-        # 2. Rule Engine calculation of damage percentage
-        class_name = str(classification.get("class_name", "")).lower()
-        class_conf = float(classification.get("confidence", 0.0))
-        is_healthy = "healthy" in class_name
-
-        # Calculate localized damage spots score (from YOLO detections)
-        # Sum confidence values of all detections multiplied by standard weight
-        yolo_spots_score = sum(float(det.get("confidence", 1.0)) * 15.0 for det in detections)
-
-        if is_healthy:
-            # Crop is classified as healthy, adjust damage down based on classifier confidence
-            reduction = class_conf * 25.0
-            damage_percentage = max(0.0, yolo_spots_score - reduction)
+        # Handle keyword arguments
+        if classification is not None:
+            if not isinstance(classification, dict):
+                raise InvalidSeverityInputError("Classification input must be a dictionary.")
+            if "class_name" not in classification or "confidence" not in classification:
+                raise InvalidSeverityInputError("Classification must contain 'class_name' and 'confidence' keys.")
+            raw_class = classification["class_name"]
+            raw_conf = classification["confidence"]
+        elif isinstance(predicted_class_or_detections_or_dict, str):
+            raw_class = predicted_class_or_detections_or_dict
+            raw_conf = confidence_or_classification
+        elif isinstance(predicted_class_or_detections_or_dict, dict):
+            if "class_name" not in predicted_class_or_detections_or_dict or "confidence" not in predicted_class_or_detections_or_dict:
+                raise InvalidSeverityInputError("Classification dict must contain 'class_name' and 'confidence' keys.")
+            raw_class = predicted_class_or_detections_or_dict["class_name"]
+            raw_conf = predicted_class_or_detections_or_dict["confidence"]
+        elif isinstance(confidence_or_classification, dict):
+            if "class_name" not in confidence_or_classification or "confidence" not in confidence_or_classification:
+                raise InvalidSeverityInputError("Classification dict must contain 'class_name' and 'confidence' keys.")
+            raw_class = confidence_or_classification["class_name"]
+            raw_conf = confidence_or_classification["confidence"]
         else:
-            # Crop is classified as diseased/damaged, combine spot count and disease confidence
-            disease_influence = class_conf * 45.0
-            damage_percentage = min(100.0, yolo_spots_score + disease_influence)
-            # Guarantee a base floor if a disease class is predicted with high confidence
-            if class_conf > 0.6:
-                damage_percentage = max(damage_percentage, 20.0)
+            raise InvalidSeverityInputError("Classification input missing or malformed.")
 
-        # 3. Determine severity category based on thresholds
-        if damage_percentage < self.low_threshold:
-            severity = "Low"
-        elif damage_percentage < self.moderate_threshold:
-            # We map this range to Moderate (as low threshold is exceeded)
-            severity = "Moderate"
-        else:
-            # Exceeded moderate damage threshold, maps to Severe
-            severity = "Severe"
+        # Validate class_name
+        if not isinstance(raw_class, str) or not raw_class.strip():
+            raise InvalidSeverityInputError("Classification class_name must be a non-empty string.")
+        class_name = raw_class.strip()
 
-        # 4. Compute Risk Score (Float 0.0 to 10.0)
-        # Combines damage percentage and classification confidence
-        risk_base = (damage_percentage / 100.0) * 7.0
-        if not is_healthy:
-            risk_base += class_conf * 3.0
-        else:
-            # Reduce risk score for healthy crops
-            risk_base -= class_conf * 2.0
+        # Validate confidence
+        try:
+            class_conf = float(raw_conf)
+        except (ValueError, TypeError) as exc:
+            raise InvalidSeverityInputError("Classification confidence must be a valid float.") from exc
 
-        risk_score = min(10.0, max(0.0, risk_base))
+        if not (0.0 <= class_conf <= 1.0):
+            raise InvalidSeverityInputError("Classification confidence must be between 0.0 and 1.0.")
 
-        # 5. Compute Action Recommendation Score (Integer 1 to 5)
-        # 1: No action (completely healthy)
-        # 2: Monitoring (low damage detected)
-        # 3: Standard treatment (moderate damage)
-        # 4: Urgent quarantine/intervention (severe damage below critical threshold)
-        # 5: Critical/Total block intervention (severe damage exceeding severe threshold)
-        if severity == "Low":
-            recommendation_score = 1 if damage_percentage == 0.0 else 2
-        elif severity == "Moderate":
+        # Validations on detections if provided (for backwards compatibility)
+        dets_to_check = detections if detections is not None else (
+            predicted_class_or_detections_or_dict if isinstance(predicted_class_or_detections_or_dict, list) else None
+        )
+        if dets_to_check is not None:
+            if not isinstance(dets_to_check, list):
+                raise InvalidSeverityInputError("Detections input must be a list.")
+            for det in dets_to_check:
+                if not isinstance(det, dict):
+                    raise InvalidSeverityInputError(f"Each detection element must be a dictionary. Got type {type(det)}")
+                if "confidence" not in det:
+                    raise InvalidSeverityInputError("Each detection dictionary must contain a 'confidence' key.")
+
+        # Retrieve authoritative agronomic profile
+        profile = get_agronomic_profile(class_name)
+        severity_tier = profile["severity_tier"]
+        severity_basis = profile["severity_basis"]
+
+        # Model reliability check (uncalibrated heuristic for inspector triage)
+        confidence_review_required = bool(class_conf < 0.60)
+
+        # Map categorical severity to numerical risk representations
+        if severity_tier == "LOW":
+            risk_score = 0.0 if "healthy" in class_name.lower() else 1.5
+            recommendation_score = 1 if "healthy" in class_name.lower() else 2
+        elif severity_tier == "MODERATE":
+            risk_score = 5.0
             recommendation_score = 3
-        else:  # Severe
-            if damage_percentage >= self.severe_threshold:
-                recommendation_score = 5
-            else:
-                recommendation_score = 4
+        elif severity_tier == "HIGH":
+            risk_score = 8.5
+            recommendation_score = 4
+        else:  # INSUFFICIENT_EVIDENCE
+            risk_score = 5.0
+            recommendation_score = 3
 
         logger.info(
-            f"Rule evaluation output: percentage={damage_percentage:.2f}%, "
-            f"severity={severity}, risk={risk_score:.2f}, recommendation={recommendation_score}"
+            f"Domain severity evaluation: class='{class_name}', severity='{severity_tier}', "
+            f"conf={class_conf:.4f}, review_required={confidence_review_required}"
         )
 
         return {
-            "damage_percentage": float(round(damage_percentage, 2)),
-            "severity": severity,
-            "risk_score": float(round(risk_score, 2)),
+            "severity": severity_tier,
+            "severity_basis": severity_basis,
+            "confidence": round(class_conf, 4),
+            "confidence_review_required": confidence_review_required,
+            "damage_percentage": None,
+            "physical_damage_supported": False,
+            "risk_score": float(risk_score),
             "recommendation_score": int(recommendation_score),
         }

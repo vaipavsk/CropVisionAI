@@ -34,6 +34,7 @@ export function AppRoutes() {
         <Route path="/farmer/analysis" element={<FarmerDashboard initialTab="upload" />} />
         <Route path="/farmer/history" element={<FarmerDashboard initialTab="history" />} />
         <Route path="/farmer/claims" element={<FarmerDashboard initialTab="claims" />} />
+        <Route path="/farmer/claims/:claimId" element={<FarmerDashboard initialTab="claims" />} />
         <Route path="/farmer/profile" element={<FarmerDashboard initialTab="profile" />} />
       </Route>
 
@@ -45,6 +46,8 @@ export function AppRoutes() {
         <Route path="/inspector/rejected" element={<InspectorDashboard initialTab="rejected" />} />
         <Route path="/inspector/reports" element={<InspectorDashboard initialTab="reports" />} />
         <Route path="/inspector/profile" element={<InspectorDashboard initialTab="profile" />} />
+        <Route path="/inspector/claims/:claimId" element={<InspectorDashboard initialTab="investigate" />} />
+        <Route path="/inspector/investigate/:claimId" element={<InspectorDashboard initialTab="investigate" />} />
       </Route>
 
       {/* Legacy & Shortcut Route Aliases */}

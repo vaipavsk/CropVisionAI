@@ -66,7 +66,8 @@ class TestEfficientNetClassifier(unittest.TestCase):
 
     def test_classifier_with_custom_categories(self) -> None:
         """Test classifier with custom classes list."""
-        custom_categories = [f"damage_level_{i}" for i in range(1000)]
+        # The production checkpoint has a fixed 37-neuron output head.
+        custom_categories = [f"damage_level_{i}" for i in range(37)]
         classifier = EfficientNetClassifier(categories=custom_categories)
         
         mock_image = np.random.randint(0, 256, size=(100, 100, 3), dtype=np.uint8)

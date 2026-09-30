@@ -76,7 +76,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
           `}
         >
           {/* Sidebar Header */}
-          <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/50 dark:border-white/5">
+          <div className="flex h-20 items-center justify-between px-4 border-b border-slate-200/50 dark:border-white/5">
             <Link to="/inspector/dashboard" className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-slate-950 shadow-md shadow-emerald-500/10">
                 <ShieldCheck size={18} />
@@ -88,7 +88,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
                   className="whitespace-nowrap"
                 >
                   <p className="text-sm font-bold tracking-wide text-slate-900 dark:text-white leading-none">CropVisionAI</p>
-                  <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-500 dark:text-emerald-400">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-emerald-500 dark:text-emerald-400">
                     Inspector Portal
                   </span>
                 </motion.div>
@@ -104,11 +104,13 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
               return (
                 <button
                   key={item.id}
+                  aria-label={`Navigate to ${item.label}`}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => {
                     if (setActiveTab) setActiveTab(item.id);
                   }}
                   className={`
-                    w-full relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium tracking-wide transition-all duration-300 outline-none cursor-pointer
+                    w-full relative flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium tracking-wide transition-all duration-300 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-400
                     ${isActive 
                       ? 'text-emerald-600 dark:text-emerald-300 font-semibold' 
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
@@ -152,13 +154,14 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
                   <p className="text-xs font-semibold leading-tight text-slate-800 dark:text-white truncate max-w-[120px]">
                     {user?.displayName || user?.email?.split('@')[0] || 'Inspector User'}
                   </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Claim Inspector</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Claim Inspector</p>
                 </div>
               </div>
             )}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white cursor-pointer"
+              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
               {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -191,7 +194,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
                     </div>
                     <div>
                       <p className="text-sm font-bold tracking-wide">CropVisionAI</p>
-                      <span className="text-[9px] uppercase tracking-[0.2em] font-semibold text-emerald-400">
+                      <span className="text-xs uppercase tracking-wider font-semibold text-emerald-400">
                         Inspector Portal
                       </span>
                     </div>
@@ -211,6 +214,8 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
                     return (
                       <button
                         key={item.id}
+                        aria-label={`Navigate to ${item.label}`}
+                        aria-current={isActive ? 'page' : undefined}
                         onClick={() => {
                           if (setActiveTab) setActiveTab(item.id);
                           setIsMobileMenuOpen(false);
@@ -223,7 +228,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
                           }
                         `}
                       >
-                        <Icon size={18} className={isActive ? 'text-emerald-400' : ''} />
+                        <Icon size={18} className={isActive ? 'text-emerald-400' : ''} aria-hidden="true" />
                         <span>{item.label}</span>
                       </button>
                     );
@@ -256,7 +261,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           
           {/* TOPBAR */}
-          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5">
+          <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b px-6 backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5">
             
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -297,6 +302,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
 
               <button
                 onClick={handleLogout}
+                aria-label="Logout"
                 className="flex items-center gap-1 text-xs font-semibold border border-transparent rounded-full px-3 py-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-red-400 cursor-pointer transition-all"
               >
                 <LogOut size={14} />
@@ -318,7 +324,7 @@ export function InspectorLayout({ children, activeTab, setActiveTab }) {
           </main>
 
           {/* STATUSBAR */}
-          <footer className="h-10 border-t flex items-center justify-between px-4 text-[11px] font-semibold tracking-wide backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5 text-slate-500 dark:text-slate-400">
+          <footer className="h-10 border-t flex items-center justify-between px-4 text-xs font-semibold tracking-wide backdrop-blur-md bg-white/70 border-slate-200/80 dark:bg-slate-950/70 dark:border-white/5 text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <Wifi size={12} className="text-emerald-500 animate-pulse" />

@@ -1,0 +1,318 @@
+{
+  "training_time_seconds": 15630.683295726776,
+  "baseline_test_metrics": {
+    "accuracy": 0.011639000190803281,
+    "macro_f1": 0.0077936305498054834
+  },
+  "candidate_test_metrics": {
+    "accuracy": 0.976531196336577,
+    "macro_precision": 0.9754764919950735,
+    "macro_recall": 0.9799593298784227,
+    "macro_f1": 0.9770704626980373,
+    "weighted_f1": 0.9764353729834431
+  },
+  "per_class_metrics": [
+    {
+      "class_name": "Corn_Common_Rust",
+      "precision": 0.9999999999999917,
+      "recall": 0.9999999999999917,
+      "f1": 0.9999999999994917,
+      "support": 119
+    },
+    {
+      "class_name": "Corn_Gray_Leaf_Spot",
+      "precision": 0.9807692307692119,
+      "recall": 0.9999999999999803,
+      "f1": 0.990291262135403,
+      "support": 51
+    },
+    {
+      "class_name": "Corn_Healthy",
+      "precision": 0.9999999999999915,
+      "recall": 0.9999999999999915,
+      "f1": 0.9999999999994915,
+      "support": 117
+    },
+    {
+      "class_name": "Corn_Northern_Leaf_Blight",
+      "precision": 0.9999999999999899,
+      "recall": 0.98989898989898,
+      "f1": 0.9949238578675103,
+      "support": 99
+    },
+    {
+      "class_name": "Pepper_Bacterial_Spot",
+      "precision": 0.9899999999999901,
+      "recall": 0.9899999999999901,
+      "f1": 0.9899999999994901,
+      "support": 100
+    },
+    {
+      "class_name": "Pepper_Healthy",
+      "precision": 0.9932432432432365,
+      "recall": 0.9999999999999932,
+      "f1": 0.9966101694910187,
+      "support": 147
+    },
+    {
+      "class_name": "Potato_Early_Blight",
+      "precision": 0.9900990099009803,
+      "recall": 0.99999999999999,
+      "f1": 0.9950248756213806,
+      "support": 100
+    },
+    {
+      "class_name": "Potato_Healthy",
+      "precision": 0.9999999999999333,
+      "recall": 0.9999999999999333,
+      "f1": 0.9999999999994333,
+      "support": 15
+    },
+    {
+      "class_name": "Potato_Late_Blight",
+      "precision": 0.9999999999999899,
+      "recall": 0.9899999999999901,
+      "f1": 0.9949748743713492,
+      "support": 100
+    },
+    {
+      "class_name": "Rice_Bacterial_Blight",
+      "precision": 0.9690140845070394,
+      "recall": 0.9885057471264339,
+      "f1": 0.9786628733992128,
+      "support": 348
+    },
+    {
+      "class_name": "Rice_Bacterial_Streak",
+      "precision": 0.7692307692307101,
+      "recall": 0.9999999999999,
+      "f1": 0.8695652173907371,
+      "support": 10
+    },
+    {
+      "class_name": "Rice_Bakanae",
+      "precision": 0.9999999999999,
+      "recall": 0.9999999999999,
+      "f1": 0.9999999999994,
+      "support": 10
+    },
+    {
+      "class_name": "Rice_Brown_Spot",
+      "precision": 0.9463806970509357,
+      "recall": 0.9540540540540514,
+      "f1": 0.9502018842525256,
+      "support": 370
+    },
+    {
+      "class_name": "Rice_False_Smut",
+      "precision": 0.9999999999998334,
+      "recall": 0.9999999999998334,
+      "f1": 0.9999999999993334,
+      "support": 6
+    },
+    {
+      "class_name": "Rice_Grassy_Stunt_Virus",
+      "precision": 0.9999999999999,
+      "recall": 0.9999999999999,
+      "f1": 0.9999999999994,
+      "support": 10
+    },
+    {
+      "class_name": "Rice_Healthy",
+      "precision": 0.9283387622149806,
+      "recall": 0.9661016949152509,
+      "f1": 0.9468438538200951,
+      "support": 295
+    },
+    {
+      "class_name": "Rice_Hispa",
+      "precision": 0.9460784313725444,
+      "recall": 0.8733031674208106,
+      "f1": 0.9082352941171435,
+      "support": 221
+    },
+    {
+      "class_name": "Rice_Leaf_Blast",
+      "precision": 0.9298780487804849,
+      "recall": 0.905044510385754,
+      "f1": 0.917293233082204,
+      "support": 337
+    },
+    {
+      "class_name": "Rice_Leaf_Scald",
+      "precision": 0.9919999999999961,
+      "recall": 0.9802371541501937,
+      "f1": 0.9860834990054603,
+      "support": 253
+    },
+    {
+      "class_name": "Rice_Leaf_Smut",
+      "precision": 0.8965517241379155,
+      "recall": 0.9999999999999807,
+      "f1": 0.9454545454540296,
+      "support": 52
+    },
+    {
+      "class_name": "Rice_Narrow_Brown_Spot",
+      "precision": 0.9999999999999944,
+      "recall": 0.9944134078212236,
+      "f1": 0.9971988795513151,
+      "support": 179
+    },
+    {
+      "class_name": "Rice_Neck_Blast",
+      "precision": 0.9999999999999868,
+      "recall": 0.9999999999999868,
+      "f1": 0.9999999999994869,
+      "support": 75
+    },
+    {
+      "class_name": "Rice_Ragged_Stunt_Virus",
+      "precision": 0.9999999999999,
+      "recall": 0.9999999999999,
+      "f1": 0.9999999999994,
+      "support": 10
+    },
+    {
+      "class_name": "Rice_Sheath_Blight",
+      "precision": 0.9838709677419196,
+      "recall": 0.9838709677419196,
+      "f1": 0.9838709677414196,
+      "support": 62
+    },
+    {
+      "class_name": "Rice_Sheath_Rot",
+      "precision": 0.8749999999998906,
+      "recall": 0.7777777777776913,
+      "f1": 0.8235294117641107,
+      "support": 9
+    },
+    {
+      "class_name": "Rice_Stem_Rot",
+      "precision": 0.9999999999999,
+      "recall": 0.9999999999999,
+      "f1": 0.9999999999994,
+      "support": 10
+    },
+    {
+      "class_name": "Rice_Tungro",
+      "precision": 0.9999999999999968,
+      "recall": 0.9999999999999968,
+      "f1": 0.9999999999994968,
+      "support": 323
+    },
+    {
+      "class_name": "Tomato_Bacterial_Spot",
+      "precision": 0.9859154929577418,
+      "recall": 0.9859154929577418,
+      "f1": 0.9859154929572418,
+      "support": 213
+    },
+    {
+      "class_name": "Tomato_Early_Blight",
+      "precision": 0.9999999999999898,
+      "recall": 0.9699999999999903,
+      "f1": 0.984771573603551,
+      "support": 100
+    },
+    {
+      "class_name": "Tomato_Healthy",
+      "precision": 0.9937106918238932,
+      "recall": 0.9999999999999937,
+      "f1": 0.9968454258670016,
+      "support": 158
+    },
+    {
+      "class_name": "Tomato_Late_Blight",
+      "precision": 0.9844559585492177,
+      "recall": 0.9999999999999948,
+      "f1": 0.9921671018271712,
+      "support": 190
+    },
+    {
+      "class_name": "Tomato_Leaf_Mold",
+      "precision": 0.989473684210516,
+      "recall": 0.989473684210516,
+      "f1": 0.9894736842100159,
+      "support": 95
+    },
+    {
+      "class_name": "Tomato_Mosaic_Virus",
+      "precision": 0.9999999999999729,
+      "recall": 0.9999999999999729,
+      "f1": 0.9999999999994729,
+      "support": 37
+    },
+    {
+      "class_name": "Tomato_Septoria_Leaf_Spot",
+      "precision": 0.9999999999999942,
+      "recall": 0.9774011299434974,
+      "f1": 0.9885714285709231,
+      "support": 177
+    },
+    {
+      "class_name": "Tomato_Spider_Mites",
+      "precision": 0.970760233918123,
+      "recall": 0.9940119760478983,
+      "f1": 0.9822485207095534,
+      "support": 167
+    },
+    {
+      "class_name": "Tomato_Target_Spot",
+      "precision": 0.9852941176470517,
+      "recall": 0.9503546099290713,
+      "f1": 0.9675090252702513,
+      "support": 141
+    },
+    {
+      "class_name": "Tomato_Yellow_Leaf_Curl_Virus",
+      "precision": 0.9925650557620799,
+      "recall": 0.9981308411214934,
+      "f1": 0.9953401677534589,
+      "support": 535
+    }
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 1.0220777300228658,
+      "train_acc": 0.8974787052810903,
+      "val_loss": 0.23582596920689128,
+      "val_acc": 0.9434389140271493,
+      "val_f1": 0.9432886721033498
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8285522167158695,
+      "train_acc": 0.9620102214650766,
+      "val_loss": 0.1825172441083022,
+      "val_acc": 0.9611613876319759,
+      "val_f1": 0.9535585271540481
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.7790033895924713,
+      "train_acc": 0.9769505962521294,
+      "val_loss": 0.1734557981247456,
+      "val_acc": 0.9722850678733032,
+      "val_f1": 0.962562196280499
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.7514948829719115,
+      "train_acc": 0.9841737649063033,
+      "val_loss": 0.16175237412636095,
+      "val_acc": 0.9764328808446455,
+      "val_f1": 0.9720666386904813
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.7355548152241228,
+      "train_acc": 0.9884838160136287,
+      "val_loss": 0.16241255965572676,
+      "val_acc": 0.9754901960784313,
+      "val_f1": 0.9696807956738432
+    }
+  ],
+  "candidate_model_path": "c:\\Users\\vipin\\OneDrive\\Documents\\CropVisionAI\\ai-service\\trained_models\\efficientnet_b0_37class_candidate.pth"
+}

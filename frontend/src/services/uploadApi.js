@@ -1,4 +1,5 @@
-import api, { handleApiError } from './api';
+import aiApi from './aiApi';
+import { handleApiError } from './api';
 
 /**
  * Uploads a crop specimen image file.
@@ -10,7 +11,7 @@ export const uploadImage = async (file) => {
   formData.append('image', file);
 
   try {
-    const response = await api.post('/upload', formData, {
+    const response = await aiApi.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

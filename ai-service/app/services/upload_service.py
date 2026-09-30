@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import uuid
+from io import BytesIO
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -47,6 +49,15 @@ class UploadService:
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="File size exceeds the 10 MB limit.",
             )
+
+        try:
+            with Image.open(BytesIO(contents)) as candidate:
+                candidate.verify()
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is not a valid decodable image.",
+            ) from exc
 
         try:
             destination.write_bytes(contents)

@@ -1,4 +1,4 @@
-﻿# =====================================
+# =====================================
 # CropVisionAI - .gitignore
 # =====================================
 
@@ -26,16 +26,24 @@ build/
 dist/
 *.egg-info/
 
-# Environment variables
+# Environment variables and secrets
 .env
 *.env
+**/.env
+**/*.env
+**/*.env.local
+**/*.env.*.local
 !.env.example
+!*.env.example
+!**/.env.example
 
 # Firebase / service account credentials
 *-firebase-adminsdk-*.json
 **/*firebase-adminsdk*.json
 service-account*.json
 firebase-service-account*.json
+*.pem
+*.key
 
 # Uploads & generated files
 uploads/
@@ -77,3 +85,14 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Playwright generated output
+playwright-report/
+test-results/

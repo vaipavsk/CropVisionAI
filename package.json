@@ -1,0 +1,26 @@
+{
+  "name": "cropvisionai",
+  "version": "1.0.0",
+  "description": "[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C.svg?logo=pytorch)](https://pytorch.org) [![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react)](https://reactjs.org) [![Tests](https://img.shields.io/badge/Backend%20Tests-86%20Passed-brightgreen.svg)]() [![Security](https://img.shields.io/badge/Security-RBAC%20%7C%20Rate%20Limited%20%7C%20Audited-blue.svg)]()",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vaipavsk/CropVisionAI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/vaipavsk/CropVisionAI/issues"
+  },
+  "homepage": "https://github.com/vaipavsk/CropVisionAI#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2"
+  }
+}
